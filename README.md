@@ -33,7 +33,7 @@ In diesem Flussdiagramm wird das Auslesen und die Verzweigungen des Projekts auf
 Funktionen:
 - Gelb = Muss
 - Türkis = Wunsch
-![„arduino mazda323“](https://github.com/user-attachments/assets/61f1ce16-cf61-45d2-b012-9e24b1b75494)
+![„arduino mazda323“ (1)](https://github.com/user-attachments/assets/155dc780-4405-4f0f-a0fe-c4df2361b815)
 
 
 ## Projektbeschreibung
