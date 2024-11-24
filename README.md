@@ -2,9 +2,9 @@
 
 Mein Mazda323 Jg. 1990 erhält einige Upgrades. 
 1. Das rückwärts Einparken soll mit zwei wasserdichten JSN-SR04T Ultraschallsensoren erleichtert werden. 
-Mit einem Drucktaster kann die Hilfe eingeschaltet oder ausgeschaltet werden. Ein akkustisches Signal soll die Distanz, mit steigender oder sinkender Frequenz, den Abstand andeuten.
+Mit einem Drucktaster kann die Parkhilfe eingeschaltet oder ausgeschaltet werden. Ein akkustisches Signal soll die Distanz, mit steigender oder sinkender Frequenz, den Abstand andeuten.
 Die Sensoren werden Links und Rechts am Heck verbaut.
-2. Die Innentemperatur, sowie die Beschleunigungskraft [G-Kraft] des Autos sollen gemessen und angezeigt werden. Hierfür wird der Sensor Gy-521 verwendet, sowie ein geeignetes Ausgabegerät.
+2. Die Innentemperatur, sowie die Beschleunigungskraft [G-Kraft] des Autos sollen während der Fahrt gemessen und angezeigt werden. Hierfür wird der Sensor Gy-521 verwendet, sowie ein geeignetes Ausgabegerät.
 
 
 ## Anforderungen
