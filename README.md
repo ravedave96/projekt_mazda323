@@ -45,6 +45,15 @@ Kurze Beschreibung der Vorgehensweise
 - Nein, warum konnten nicht alle umgesetzt werden?
 - War etwas unerwartet beim Schreiben des Programcodes?
 
+## Parts
+- 1x Arduino UNO R3
+- 1x Breadboard
+- 2x JSN-SR04T Ultrasonic Sensor
+- 1x MPU6050 Beschleunigungssensor
+- 1x Drucktaster
+- 2x Piezo-Buzzer oder Lautsprecher
+- 1x Visuelles Ausgabegerät, z.B LCD-Bildschirm
+
 ## Tests
 Kurze Beschreibung der Vorgehensweise
 
