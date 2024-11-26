@@ -2,7 +2,7 @@
 
 Mein Mazda323 Jg. 1990 erhält einige Upgrades. 
 1. Das rückwärts Einparken soll mit zwei wasserdichten JSN-SR04T Ultraschallsensoren erleichtert werden. 
-Mit einem Drucktaster kann die Parkhilfe eingeschaltet oder ausgeschaltet werden. Ein akkustisches Signal soll die Distanz, mit steigender oder sinkender Frequenz, den Abstand andeuten.
+Mit einem Drucktaster kann die Parkhilfe eingeschaltet oder ausgeschaltet werden, wenn möglich wird die Parkhilfe beim rückwärts Fahren automatisch aktiviert. Ein akkustisches Signal soll, mit steigender oder sinkender Frequenz, den Abstand zum Hindernis angeben.
 Die Sensoren werden Links und Rechts am Heck verbaut.
 2. Die Innentemperatur, sowie die Beschleunigungskraft [G-Kraft] des Autos sollen während der Fahrt gemessen und angezeigt werden. Hierfür wird der Sensor Gy-521 verwendet, sowie ein geeignetes Ausgabegerät.
 
@@ -14,7 +14,8 @@ Die Sensoren werden Links und Rechts am Heck verbaut.
 |Arduino gibt Temperatur auf einem Bildschirm aus.|x||
 |Arduino gibt Beschleunigung in G auf einem Bildschirm aus.||x|
 |Einparkhilfe mit Drucktaster ein- oder ausschalten|x||
-|Einparkhilfe meldet via Buzzer o.ä.akkustisch die Distanz|x||
+|Einparkhilfe wird aktiviert bei rückwärtsbewegung||x|
+|Einparkhilfe meldet via Buzzer o.ä. akkustisch die Distanz|x||
 |Gemessene Distanz von Auto kann visuel (Balken o.ä.) auf einem Bildschirm angezeigt werden. ||x|
 
 
@@ -33,8 +34,7 @@ In diesem Flussdiagramm wird das Auslesen und die Verzweigungen des Projekts auf
 Funktionen:
 - Gelb = Muss
 - Türkis = Wunsch
-![„arduino mazda323“ (1)](https://github.com/user-attachments/assets/155dc780-4405-4f0f-a0fe-c4df2361b815)
-
+![„arduino mazda323“ (2)](https://github.com/user-attachments/assets/a6a8830c-5227-48ca-9794-3d8871c89bba)
 
 ## Projektbeschreibung
 Kurze Beschreibung der Vorgehensweise
@@ -44,6 +44,15 @@ Kurze Beschreibung der Vorgehensweise
 - Konnten alle Muss-Anforderungen umgesetzt werden?
 - Nein, warum konnten nicht alle umgesetzt werden?
 - War etwas unerwartet beim Schreiben des Programcodes?
+
+## Parts
+- 1x Arduino UNO R3
+- 1x Breadboard
+- 2x JSN-SR04T Ultrasonic Sensor
+- 1x MPU6050 Beschleunigungssensor
+- 1x Drucktaster
+- 2x Piezo-Buzzer oder Lautsprecher
+- 1x Visuelles Ausgabegerät, z.B LCD-Bildschirm
 
 ## Tests
 Kurze Beschreibung der Vorgehensweise
