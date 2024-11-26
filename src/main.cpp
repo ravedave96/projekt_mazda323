@@ -1,4 +1,10 @@
 #include <Arduino.h>
+#include <Wire.h>
+
+void ummschalten();
+void ParkhilfeLH();
+void ParkhilfeRH();
+void Beschleunigung();
 
 int push = 0;       // aktueller Zustand des Tasters
 int lastpush = 0;   // letzter Zustand des Tasters
@@ -22,12 +28,12 @@ void setup() {
     pinMode(parkPin, OUTPUT);    // Ausgang 12, Parkhilfe
     pinMode(beschleunigungPin, OUTPUT);    // Ausgang 13, Beschleunigung
 
-    digitalWrite(12, LOW);
-    digitalWrite(13, LOW);
+    digitalWrite(parkPin, LOW);
+    digitalWrite(beschleunigungPin, LOW);
 
-    pinMode(trigPinLH, INPUT);      // Eingang 6, TriggerLH
+    pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
     pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
-    pinMode(trigPinRH, INPUT);      // Eingang 8, TriggerRH
+    pinMode(trigPinRH, OUTPUT);     // Eingang 8, TriggerRH
     pinMode(trigPinLH, INPUT);      // Eingang 9, EchoRH
     pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
     pinMode(buzzerPinRH, OUTPUT);   // Ausgang 11, Buzzer RH
@@ -36,107 +42,119 @@ void setup() {
     tone(buzzerPinRH, 1000, 2000);
 }
 
-
 void loop() {
-    void ummschalten ();
+    ummschalten();
 
-    if (digitalRead(12) == HIGH && digitalRead(13) == LOW) {
-        void ParkhilfeLH ();
-        void ParkhilfeRH ();
-    }
-    else {
-        void Beschleunigung ();
+    if (schalter) {
+        ParkhilfeLH();
+        ParkhilfeRH();
+    } else {
+        Beschleunigung();
     }
 }
 
-void ummschalten () {
+void umschalten () {
     // Umschalttaste auslesen
-    push = digitalRead(2);
+    push = digitalRead(tasterPin);
 
     // Prüfen, ob der Taster gedrückt wurde (Zustandsänderung von LOW nach HIGH)
-    if (push == HIGH && lastpush == LOW)
-    {
-        // Taster-Zustand umkehren
-        schalter = !schalter;
+    if (push == HIGH && lastpush == LOW) {
+        schalter = !schalter;   // Taster-Zustand umkehren
 
         // Zustand der Ausgänge basierend auf dem Taster-Zustand setzen
         if (schalter) {
-            digitalWrite(13, HIGH); // Ausgang 13 HIGH
-            digitalWrite(12, LOW);  // Ausgang 12 LOW
+            digitalWrite(beschleunigungPin, HIGH); // Ausgang 13 HIGH
+            digitalWrite(parkPin, LOW);  // Ausgang 12 LOW
         } else {
-            digitalWrite(13, LOW);  // Ausgang 13 LOW
-            digitalWrite(12, HIGH); // Ausgang 12 HIGH
+            digitalWrite(beschleunigungPin, LOW);  // Ausgang 13 LOW
+            digitalWrite(parkPin, HIGH); // Ausgang 12 HIGH
         }
     }
 
     // Verzögerung für Entprellung
     delay(50);
 
-    // Aktuellen Zustand des Tasters speichern
+    // Aktuellen Zustand Tasters speichern
     lastpush = push;
 
 }
 
 void ParkhilfeLH () {
-    float zeit, distanz;
+    float zeit = 0, distanz = 0;
 
+    // Trigger-Signal erzeugen
     digitalWrite(trigPinLH, LOW);
     delayMicroseconds(2);
-
-    digitalWrite(trigPinLH, HIGH); //soundwave wird gesendet für 10ms
+    digitalWrite(trigPinLH, HIGH); // Ultraschallsignal senden
     delayMicroseconds(10);
     digitalWrite(trigPinLH, LOW);
 
-    zeit = pulseIn(echoPinLH, HIGH); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
-    distanz = (zeit / 2) * 0.0344; // Distanz in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
+    // Echo-Zeit messen
+    zeit = pulseIn(echoPinLH, HIGH, 30000); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
+    if (zeit == 0) {
+        // Keine valide Messung, Rückkehr aus der Funktion
+        Serial.println("Kein Echo empfangen");
+        noTone(buzzerPinLH); // Buzzer ausschalten, falls aktiv
+        return;
+    }
 
-    Serial.print("Distanz = ");
+    //Distanz berechnen in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
+    distanz = (zeit / 2) * 0.0344;
+
+    Serial.print("Distanz LH = ");
     Serial.print(distanz);
     Serial.println(" cm");
-    delay(500);
 
+    // Audio Distanz Signal
     if (distanz >= 110) {
-        tone(buzzerPinLH, 523); // C4
-        delay(1000);}
-    else if (distanz < 110 && distanz > 50) {
-        tone(buzzerPinLH, 523);
-        delay(500);}
-    else {
-        tone(buzzerPinLH, 523);
-        delay(100);
-
+        tone(buzzerPinLH, 523, 1000); // C4
+    } else if (distanz < 110 && distanz > 50) {
+        tone(buzzerPinLH, 523, 500);
+    } else {
+        tone(buzzerPinLH, 523, 100);
     }
+    // Wartezeit vor der nächsten Messung
+    delay(500);
 }
 
 void ParkhilfeRH () {
-    float zeit, distanz;
+    float zeit = 0, distanz = 0;
 
+    // Trigger-Signal erzeugen
     digitalWrite(trigPinRH, LOW);
     delayMicroseconds(2);
-
-    digitalWrite(trigPinRH, HIGH); //soundwave wird gesendet für 10ms
+    digitalWrite(trigPinRH, HIGH); // Ultraschallsignal senden
     delayMicroseconds(10);
     digitalWrite(trigPinRH, LOW);
 
-    zeit = pulseIn(echoPinRH, HIGH); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
-    distanz = (zeit / 2) * 0.0344; // Distanz in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
+    // Echo-Zeit messen
+    zeit = pulseIn(echoPinRH, HIGH, 30000); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
+    if (zeit == 0) {
+        // Keine valide Messung, Rückkehr aus der Funktion
+        Serial.println("Kein Echo empfangen");
+        noTone(buzzerPinRH); // Buzzer ausschalten, falls aktiv
+        return;
+    }
 
-    Serial.print("Distanz = ");
+    //Distanz berechnen in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
+    distanz = (zeit / 2) * 0.0344;
+
+    Serial.print("Distanz RH = ");
     Serial.print(distanz);
     Serial.println(" cm");
-    delay(500);
 
+    // Audio Distanz Signal
     if (distanz >= 110) {
-        tone(buzzerPinRH, 523); // C4
-        delay(1000);}
-    else if (distanz < 110 && distanz > 50) {
-        tone(buzzerPinRH, 523);
-        delay(500);}
-    else {
-        tone(buzzerPinRH, 523);
-        delay(100);
-
+        tone(buzzerPinRH, 523, 1000); // C4
+    } else if (distanz < 110 && distanz > 50) {
+        tone(buzzerPinRH, 523, 500);
+    } else {
+        tone(buzzerPinRH, 523, 100);
     }
+    // Wartezeit vor der nächsten Messung
+    delay(500);
 }
 
-void Beschleunigung () {}
+void Beschleunigung () {
+    //Platzhalter für die Beschleunigungsfunktion
+}
