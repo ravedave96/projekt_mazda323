@@ -9,6 +9,7 @@ void ParkhilfeLH();
 #define buzzerPinLH 10
 
 
+
 void setup() {
     Serial.begin(9600);
 
