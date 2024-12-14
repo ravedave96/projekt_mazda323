@@ -6,7 +6,7 @@ void ParkhilfeLH();
 
 #define trigPinLH 6
 #define echoPinLH 7
-#define buzzerPinLH 10
+//#define buzzerPinLH 10
 
 
 
@@ -15,9 +15,9 @@ void setup() {
 
     pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
     pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
-    pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
+    //pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
 
-    tone(buzzerPinLH, 1000, 2000);
+    //tone(buzzerPinLH, 1000, 2000);
 }
 
 
@@ -36,7 +36,7 @@ void ParkhilfeLH () {
     if (zeit == 0) {
         // Keine valide Messung, Rückkehr aus der Funktion
         Serial.println("Kein Echo empfangen");
-        noTone(buzzerPinLH); // Buzzer ausschalten, falls aktiv
+        //noTone(buzzerPinLH); // Buzzer ausschalten, falls aktiv
         return;
     }
 
@@ -46,7 +46,7 @@ void ParkhilfeLH () {
     Serial.print("Distanz LH = ");
     Serial.print(distanz);
     Serial.println(" cm");
-
+/*
     // Audio Distanz Signal
     if (distanz >= 110) {
         tone(buzzerPinLH, 523, 1000); // C4
@@ -57,4 +57,5 @@ void ParkhilfeLH () {
     }
     // Wartezeit vor der nächsten Messung
     delay(500);
+    */
 }
