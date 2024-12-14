@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
-
+int test;
 void ummschalten();
 void ParkhilfeLH();
 void ParkhilfeRH();
