@@ -1,160 +1,127 @@
 #include <Arduino.h>
-#include <Wire.h>
-int test;
-void ummschalten();
-void ParkhilfeLH();
-void ParkhilfeRH();
-void Beschleunigung();
+#include <Wire.h> // Include the Wire library for I2C communication
 
-int push = 0;       // aktueller Zustand des Tasters
-int lastpush = 0;   // letzter Zustand des Tasters
-bool schalter = false;  // aktueller Zustand des Ausgangs (umschaltbar)
+#define MPU6050_ADDR              0x68 // MPU6050 I2C address
+#define MPU6050_GYRO_CONFIG       0x1B // Gyroscope configuration register
+#define MPU6050_ACCEL_CONFIG      0x1C // Accelerometer configuration register
+#define MPU6050_ACCEL_XOUT_H      0x3B // Starting register for accelerometer data
+#define MPU6050_PWR_MGT_1         0x6B // Power management register
+#define MPU6050_SLEEP             0x06 // Sleep bit position in PWR_MGT_1 register
 
-#define tasterPin 2
-#define parkPin 12
-#define beschleunigungPin 13
+typedef enum {
+  MPU6050_ACC_RANGE_2G,  // +/- 2g (default)
+  MPU6050_ACC_RANGE_4G,  // +/- 4g
+  MPU6050_ACC_RANGE_8G,  // +/- 8g
+  MPU6050_ACC_RANGE_16G  // +/- 16g
+} mpu6050_acc_range;
 
-#define trigPinLH 6
-#define echoPinLH 7
-#define trigPinRH 8
-#define echoPinRH 9
-#define buzzerPinLH 10
-#define buzzerPinRH 11
+typedef enum {
+  MPU6050_GYR_RANGE_250,  // +/- 250 deg/s (default)
+  MPU6050_GYR_RANGE_500,  // +/- 500 deg/s
+  MPU6050_GYR_RANGE_1000, // +/- 1000 deg/s
+  MPU6050_GYR_RANGE_2000  // +/- 2000 deg/s
+} mpu6050_gyr_range;
+
+// Prototypes for custom functions
+void MPU6050_wakeUp();
+void MPU6050_sleep();
+void setAccRange(mpu6050_acc_range range);
+void setGyrRange(mpu6050_gyr_range range);
+void writeRegister(uint16_t reg, byte value);
+char* toStr(int16_t i);
+
+// Variables for raw data
+int16_t accX, accY, accZ, gyroX, gyroY, gyroZ, tRaw;
+const float ACCEL_SENSITIVITY = 16384.0; // Default sensitivity for +/-2g
+char result[7];
 
 void setup() {
-    Serial.begin(9600);
-
-    pinMode(tasterPin, INPUT);      // Eingang  2, Taster
-    pinMode(parkPin, OUTPUT);    // Ausgang 12, Parkhilfe
-    pinMode(beschleunigungPin, OUTPUT);    // Ausgang 13, Beschleunigung
-
-    digitalWrite(parkPin, LOW);
-    digitalWrite(beschleunigungPin, LOW);
-
-    pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
-    pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
-    pinMode(trigPinRH, OUTPUT);     // Eingang 8, TriggerRH
-    pinMode(trigPinLH, INPUT);      // Eingang 9, EchoRH
-    pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
-    pinMode(buzzerPinRH, OUTPUT);   // Ausgang 11, Buzzer RH
-
-    tone(buzzerPinLH, 1000, 2000);
-    tone(buzzerPinRH, 1000, 2000);
+  Serial.begin(9600); // Start serial communication
+  Wire.begin();       // Initialize I2C communication
+  MPU6050_wakeUp();   // Wake up the sensor
+  setAccRange(MPU6050_ACC_RANGE_16G); // Set accelerometer range to +/-16g
+  setGyrRange(MPU6050_GYR_RANGE_250); // Set gyroscope range to +/-250 deg/s
 }
 
 void loop() {
-    ummschalten();
+  MPU6050_wakeUp(); // Ensure the sensor is active
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(MPU6050_ACCEL_XOUT_H); // Start reading from ACCEL_XOUT_H register
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU6050_ADDR, 14, true); // Request 14 bytes of data
 
-    if (schalter) {
-        ParkhilfeLH();
-        ParkhilfeRH();
-    } else {
-        Beschleunigung();
-    }
+  // Read accelerometer, temperature, and gyroscope data
+  accX = Wire.read() << 8 | Wire.read();
+  accY = Wire.read() << 8 | Wire.read();
+  accZ = Wire.read() << 8 | Wire.read();
+  tRaw = Wire.read() << 8 | Wire.read();
+  gyroX = Wire.read() << 8 | Wire.read();
+  gyroY = Wire.read() << 8 | Wire.read();
+  gyroZ = Wire.read() << 8 | Wire.read();
+
+  // Convert accelerometer data to g-forces
+  float gX = accX / ACCEL_SENSITIVITY;
+  float gY = accY / ACCEL_SENSITIVITY;
+  float gZ = accZ / ACCEL_SENSITIVITY - 1.0; // Adjust for Earth's gravity on Z-axis
+
+  // Calculate total acceleration magnitude
+  float totalAcceleration = sqrt(gX * gX + gY * gY + gZ * gZ);
+
+  // Determine the dominant direction of force
+  String direction;
+  if (abs(gX) > abs(gY) && abs(gX) > abs(gZ)) {
+    direction = (gX > 0) ? "Forward (+X)" : "Backward (-X)";
+  } else if (abs(gY) > abs(gX) && abs(gY) > abs(gZ)) {
+    direction = (gY > 0) ? "Right (+Y)" : "Left (-Y)";
+  } else {
+    direction = (gZ > 0) ? "Up (+Z)" : "Down (-Z)";
+  }
+
+  // Print acceleration and gyroscope data
+  Serial.print("Acceleration Magnitude: ");
+  Serial.print(totalAcceleration, 3);
+  Serial.print(" g | Direction: ");
+  Serial.println(direction);
+
+  Serial.print("Gx = "); Serial.print(gX, 3);
+  Serial.print(" | Gy = "); Serial.print(gY, 3);
+  Serial.print(" | Gz = "); Serial.println(gZ, 3);
+
+  Serial.print("GyroX = "); Serial.print(gyroX);
+  Serial.print(" | GyroY = "); Serial.print(gyroY);
+  Serial.print(" | GyroZ = "); Serial.println(gyroZ);
+
+  // Sleep sensor to save power (optional)
+  MPU6050_sleep();
+
+  delay(500); // Short delay for better readability
 }
 
-void umschalten () {
-    // Umschalttaste auslesen
-    push = digitalRead(tasterPin);
-
-    // Prüfen, ob der Taster gedrückt wurde (Zustandsänderung von LOW nach HIGH)
-    if (push == HIGH && lastpush == LOW) {
-        schalter = !schalter;   // Taster-Zustand umkehren
-
-        // Zustand der Ausgänge basierend auf dem Taster-Zustand setzen
-        if (schalter) {
-            digitalWrite(beschleunigungPin, HIGH); // Ausgang 13 HIGH
-            digitalWrite(parkPin, LOW);  // Ausgang 12 LOW
-        } else {
-            digitalWrite(beschleunigungPin, LOW);  // Ausgang 13 LOW
-            digitalWrite(parkPin, HIGH); // Ausgang 12 HIGH
-        }
-    }
-
-    // Verzögerung für Entprellung
-    delay(50);
-
-    // Aktuellen Zustand Tasters speichern
-    lastpush = push;
-
+char* toStr(int16_t i) {
+  sprintf(result, "%6d", i); // Format integer as string
+  return result;
 }
 
-void ParkhilfeLH () {
-    float zeit = 0, distanz = 0;
-
-    // Trigger-Signal erzeugen
-    digitalWrite(trigPinLH, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPinLH, HIGH); // Ultraschallsignal senden
-    delayMicroseconds(10);
-    digitalWrite(trigPinLH, LOW);
-
-    // Echo-Zeit messen
-    zeit = pulseIn(echoPinLH, HIGH, 30000); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
-    if (zeit == 0) {
-        // Keine valide Messung, Rückkehr aus der Funktion
-        Serial.println("Kein Echo empfangen");
-        noTone(buzzerPinLH); // Buzzer ausschalten, falls aktiv
-        return;
-    }
-
-    //Distanz berechnen in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
-    distanz = (zeit / 2) * 0.0344;
-
-    Serial.print("Distanz LH = ");
-    Serial.print(distanz);
-    Serial.println(" cm");
-
-    // Audio Distanz Signal
-    if (distanz >= 110) {
-        tone(buzzerPinLH, 523, 1000); // C4
-    } else if (distanz < 110 && distanz > 50) {
-        tone(buzzerPinLH, 523, 500);
-    } else {
-        tone(buzzerPinLH, 523, 100);
-    }
-    // Wartezeit vor der nächsten Messung
-    delay(500);
+void setAccRange(mpu6050_acc_range range) {
+  writeRegister(MPU6050_ACCEL_CONFIG, range << 3);
 }
 
-void ParkhilfeRH () {
-    float zeit = 0, distanz = 0;
-
-    // Trigger-Signal erzeugen
-    digitalWrite(trigPinRH, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPinRH, HIGH); // Ultraschallsignal senden
-    delayMicroseconds(10);
-    digitalWrite(trigPinRH, LOW);
-
-    // Echo-Zeit messen
-    zeit = pulseIn(echoPinRH, HIGH, 30000); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
-    if (zeit == 0) {
-        // Keine valide Messung, Rückkehr aus der Funktion
-        Serial.println("Kein Echo empfangen");
-        noTone(buzzerPinRH); // Buzzer ausschalten, falls aktiv
-        return;
-    }
-
-    //Distanz berechnen in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
-    distanz = (zeit / 2) * 0.0344;
-
-    Serial.print("Distanz RH = ");
-    Serial.print(distanz);
-    Serial.println(" cm");
-
-    // Audio Distanz Signal
-    if (distanz >= 110) {
-        tone(buzzerPinRH, 523, 1000); // C4
-    } else if (distanz < 110 && distanz > 50) {
-        tone(buzzerPinRH, 523, 500);
-    } else {
-        tone(buzzerPinRH, 523, 100);
-    }
-    // Wartezeit vor der nächsten Messung
-    delay(500);
+void setGyrRange(mpu6050_gyr_range range) {
+  writeRegister(MPU6050_GYRO_CONFIG, range << 3);
 }
 
-void Beschleunigung () {
-    //Platzhalter für die Beschleunigungsfunktion
+void MPU6050_wakeUp() {
+  writeRegister(MPU6050_PWR_MGT_1, 0);
+  delay(30); // Allow the sensor to stabilize
+}
+
+void MPU6050_sleep() {
+  writeRegister(MPU6050_PWR_MGT_1, 1 << MPU6050_SLEEP);
+}
+
+void writeRegister(uint16_t reg, byte value) {
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(reg);
+  Wire.write(value);
+  Wire.endTransmission(true);
 }
