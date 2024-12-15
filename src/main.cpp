@@ -5,6 +5,9 @@
 #define echoPinLH 7
 #define buzzerPinLH 10
 
+void distanceLH();
+void buzzerLH();
+
 void setup() {
     Serial.begin(9600);
     pinMode(trigPinLH, OUTPUT);
@@ -14,6 +17,12 @@ void setup() {
 }
 
 void loop () {
+
+
+
+}
+
+void distanceLH() {
     float zeit = 0, distanz = 0;
 
     digitalWrite(trigPinLH, LOW);
@@ -35,6 +44,11 @@ void loop () {
     Serial.print(distanz);
     Serial.println(" cm");
 
+    delay(100);
+
+}
+void buzzerLH() {
+
     if (distanz >= 100) {
         tone(buzzerPinLH, 523, 1000); // C4
     } else if (distanz < 110 && distanz > 50) {
@@ -43,5 +57,4 @@ void loop () {
         tone(buzzerPinLH, 523, 100);
     }
 
-    delay(500);
 }
