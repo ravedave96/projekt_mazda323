@@ -38,6 +38,16 @@ Funktionen:
 
 ## Projektbeschreibung
 Kurze Beschreibung der Vorgehensweise
+#Erstellung der Programmstruktur
+1. Funktionen definiert:
+   -umschalten() : manuelle Umschaltung von normalen Fahrbetrieb mit G-Kräfte Messung zur Parkhilfefunktion
+   -Parhilfe() : jeweils LH/RH, Funktion zur Parkhilfe
+    -dinstance() : jeweils LH/RH, Funktion zur Distanzmessung in regelmässigen Abständen
+    -buzzer() : jeweils LH/RH, Funktion zur Steuerung des Buzzers basierend auf der Distanz
+   -Beschleunigung() : Funktion zur G-Kräfte Messung
+
+2. Zuweisung Pin auf Arduino Board
+3. void setup() erstellt
 
 - Welche Teilfunktionen habt ihr einzeln getestet?
 - Gab es dabei Probleme, wenn ja welche?
