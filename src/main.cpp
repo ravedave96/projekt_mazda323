@@ -70,7 +70,7 @@ void buzzerLH() {
     if (distanzLH < 0) { // Ungültige Distanz
         noTone(buzzerPinLH); // Summer ausschalten
         return;
-    } else if (distanzLH >= 100) { // Große Distanz
+    } else if (distanzLH >= 100) { // Grossse Distanz
         interval = 1000; // Langsamer Rhythmus
     } else if (distanzLH < 100 && distanzLH > 55) { // Mittlere Distanz
         interval = 500;  // Mittlerer Rhythmus
