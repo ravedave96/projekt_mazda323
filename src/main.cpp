@@ -6,9 +6,9 @@
 #define buzzerPinLH 10 // Pin für den Summer (Buzzer)
 
 // Globale Variablen
-float distanz = 0;                      // Speichert die gemessene Distanz
-unsigned long lastMeasurementTime = 0;  // Speichert die Zeit des letzten Messvorgangs
-unsigned long measurementInterval = 500; // Zeitintervall zwischen den Messungen in Millisekunden
+float distanzLH = 0;                      // Speichert die gemessene Distanz
+unsigned long lastMeasurementTimeLH = 0;  // Speichert die Zeit des letzten Messvorgangs
+unsigned long measurementIntervalLH = 500; // Zeitintervall zwischen den Messungen in Millisekunden
 
 // Funktionsprototypen
 void distanceLH(); // Funktion zur Distanzmessung
@@ -31,10 +31,10 @@ void loop() {
 // Funktion zur Distanzmessung in regelmäßigen Abständen
 void distanceLH() {
     // Überprüfen, ob das Zeitintervall seit der letzten Messung abgelaufen ist
-    if (millis() - lastMeasurementTime < measurementInterval) {
+    if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
         return; // Noch nicht Zeit für die nächste Messung
     }
-    lastMeasurementTime = millis(); // Zeit der letzten Messung aktualisieren
+    lastMeasurementTimeLH = millis(); // Zeit der letzten Messung aktualisieren
 
     float zeit = 0; // Variable zur Speicherung der Echo-Zeit
 
@@ -49,16 +49,16 @@ void distanceLH() {
     zeit = pulseIn(echoPinLH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
     if (zeit == 0) { // Kein Echo empfangen
         Serial.println("Kein Echo empfangen");
-        distanz = -1; // Ungültigen Distanzwert zuweisen
+        distanzLH = -1; // Ungültigen Distanzwert zuweisen
         return;
     }
 
     // Distanz in cm berechnen
-    distanz = (zeit / 2) * 0.0344;
+    distanzLH = (zeit / 2) * 0.0344;
 
     // Distanz zur Debug-Ausgabe ausgeben
     Serial.print("Distanz LH = ");
-    Serial.print(distanz);
+    Serial.print(distanzLH);
     Serial.println(" cm");
 }
 
@@ -67,12 +67,12 @@ void buzzerLH() {
     int interval = 1000; // Standardintervall für den Ton
 
     // Tonintervall basierend auf der gemessenen Distanz bestimmen
-    if (distanz < 0) { // Ungültige Distanz
+    if (distanzLH < 0) { // Ungültige Distanz
         noTone(buzzerPinLH); // Summer ausschalten
         return;
-    } else if (distanz >= 100) { // Große Distanz
+    } else if (distanzLH >= 100) { // Große Distanz
         interval = 1000; // Langsamer Rhythmus
-    } else if (distanz < 100 && distanz > 55) { // Mittlere Distanz
+    } else if (distanzLH < 100 && distanzLH > 55) { // Mittlere Distanz
         interval = 500;  // Mittlerer Rhythmus
     } else { // Kleine Distanz
         interval = 200;  // Schneller Rhythmus
