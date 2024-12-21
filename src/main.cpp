@@ -10,6 +10,7 @@ float distanz = 0;
 unsigned long lastMeasurementTime = 0;  // speichert letzte Messung der Distanz in ms
 unsigned long measurementInterval = 500; // interval für Distanz Messung ist 500 ms
 
+
 // Function prototypes
 void distanceLH();
 void buzzerLH();
