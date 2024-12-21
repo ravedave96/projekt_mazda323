@@ -27,7 +27,7 @@ unsigned long measurementIntervalLH = 500; // Zeitintervall zwischen den Messung
 void umschalten();
 void ParkhilfeLH();
 void distanceLH(); // Funktion zur Distanzmessung
-void buzzerLH();   // Funktion zur Steuerung des Summers
+void buzzerLH();   // Funktion zur Steuerung des Buzzer
 void ParkhilfeRH();
 void Beschleunigung();
 
@@ -94,7 +94,7 @@ void umschalten () {
 void ParkhilfeLH () {
     // Funktion zur Distanzmessung aufrufen
     distanceLH();
-    // Funktion zur kontinuierlichen Steuerung des Summers aufrufen
+    // Funktion zur kontinuierlichen Steuerung des Buzzer aufrufen
     buzzerLH();
 }
 
