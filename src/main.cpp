@@ -24,7 +24,7 @@ unsigned long measurementIntervalLH = 500; // Zeitintervall zwischen den Messung
 
 
 // Funktionsprototypen
-void ummschalten();
+void umschalten();
 void ParkhilfeLH();
 void distanceLH(); // Funktion zur Distanzmessung
 void buzzerLH();   // Funktion zur Steuerung des Summers
@@ -53,7 +53,7 @@ void setup() {
 }
 
 void loop() {
-    ummschalten();
+    umschalten();
 
     if (schalter) {
         ParkhilfeLH();
