@@ -1,83 +1,83 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#define trigPinLH 6
-#define echoPinLH 7
-#define buzzerPinLH 10
+#define trigPinLH 6   // Pin für den Trigger des Ultraschallsensors
+#define echoPinLH 7   // Pin für das Echo des Ultraschallsensors
+#define buzzerPinLH 10 // Pin für den Summer (Buzzer)
 
-// Global variables
-float distanz = 0;
-unsigned long lastMeasurementTime = 0;  // speichert letzte Messung der Distanz in ms
-unsigned long measurementInterval = 500; // interval für Distanz Messung ist 500 ms
+// Globale Variablen
+float distanz = 0;                      // Speichert die gemessene Distanz
+unsigned long lastMeasurementTime = 0;  // Speichert die Zeit des letzten Messvorgangs
+unsigned long measurementInterval = 500; // Zeitintervall zwischen den Messungen in Millisekunden
 
-
-// Function prototypes
-void distanceLH();
-void buzzerLH();
+// Funktionsprototypen
+void distanceLH(); // Funktion zur Distanzmessung
+void buzzerLH();   // Funktion zur Steuerung des Summers
 
 void setup() {
-    Serial.begin(9600);
-    pinMode(trigPinLH, OUTPUT);
-    pinMode(echoPinLH, INPUT);
-    pinMode(buzzerPinLH, OUTPUT);
+    Serial.begin(9600);                 // Serielle Kommunikation starten
+    pinMode(trigPinLH, OUTPUT);         // Trigger-Pin als Ausgang definieren
+    pinMode(echoPinLH, INPUT);          // Echo-Pin als Eingang definieren
+    pinMode(buzzerPinLH, OUTPUT);       // Buzzer-Pin als Ausgang definieren
 }
 
 void loop() {
-    // Distanz wird alle 500ms gemessen
+    // Funktion zur Distanzmessung aufrufen
     distanceLH();
-    // buzzer kann tone kontinuierlich ausgeben ohne von der Distanz Messung unterbrochen zu werden.
+    // Funktion zur kontinuierlichen Steuerung des Summers aufrufen
     buzzerLH();
 }
 
-void distanceLH() { //millis() wird verwendet, da delay() die ganze funktion blockiert
-    // Verzweigung ob Messung ansteht oder nicht
+// Funktion zur Distanzmessung in regelmäßigen Abständen
+void distanceLH() {
+    // Überprüfen, ob das Zeitintervall seit der letzten Messung abgelaufen ist
     if (millis() - lastMeasurementTime < measurementInterval) {
-        return; // noch nicht Zeit für die Messung
+        return; // Noch nicht Zeit für die nächste Messung
     }
-    lastMeasurementTime = millis();
+    lastMeasurementTime = millis(); // Zeit der letzten Messung aktualisieren
 
-    float zeit = 0;
+    float zeit = 0; // Variable zur Speicherung der Echo-Zeit
 
-    //  ultrasonic senden
-    digitalWrite(trigPinLH, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPinLH, HIGH);
+    // Ultraschallsensor auslösen (Trigger senden)
+    digitalWrite(trigPinLH, LOW);       // Trigger auf LOW setzen
+    delayMicroseconds(2);               // Kurze Pause
+    digitalWrite(trigPinLH, HIGH);      // Trigger auf HIGH setzen (10 µs Impuls)
     delayMicroseconds(10);
-    digitalWrite(trigPinLH, LOW);
+    digitalWrite(trigPinLH, LOW);       // Trigger wieder auf LOW setzen
 
-    // ultrasonic echo pulse duration messen
-    zeit = pulseIn(echoPinLH, HIGH, 30000); // Timeout of 30ms
-    if (zeit == 0) {
+    // Dauer des Echos messen
+    zeit = pulseIn(echoPinLH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
+    if (zeit == 0) { // Kein Echo empfangen
         Serial.println("Kein Echo empfangen");
-        distanz = -1; // für Fehler Erkennung
+        distanz = -1; // Ungültigen Distanzwert zuweisen
         return;
     }
 
-    // distance in cm
+    // Distanz in cm berechnen
     distanz = (zeit / 2) * 0.0344;
 
+    // Distanz zur Debug-Ausgabe ausgeben
     Serial.print("Distanz LH = ");
     Serial.print(distanz);
     Serial.println(" cm");
 }
 
+// Funktion zur Steuerung des Summers basierend auf der Distanz
 void buzzerLH() {
-    int interval = 1000; // Voreinstellung tone interval
+    int interval = 1000; // Standardintervall für den Ton
 
-    // Bestimmung tone interval zur passenden Distanz
-    if (distanz < 0) {
-        noTone(buzzerPinLH);
-        // Buzzer gibt kein Ton aus, wenn Distanz weniger 0 ist.
-        // bei Fehelrmessung ist Distanz = -1, damit es klar ist.
+    // Tonintervall basierend auf der gemessenen Distanz bestimmen
+    if (distanz < 0) { // Ungültige Distanz
+        noTone(buzzerPinLH); // Summer ausschalten
         return;
-    } else if (distanz >= 100) {
-        interval = 1000; // kleiner interval für grössere Distanzen
-    } else if (distanz < 100 && distanz > 55) {
-        interval = 500;  // mittlerer interval für mittlere Distanzen
-    } else {
-        interval = 200;  // schneller interval für kleine Distanzen
+    } else if (distanz >= 100) { // Große Distanz
+        interval = 1000; // Langsamer Rhythmus
+    } else if (distanz < 100 && distanz > 55) { // Mittlere Distanz
+        interval = 500;  // Mittlerer Rhythmus
+    } else { // Kleine Distanz
+        interval = 200;  // Schneller Rhythmus
     }
 
-    // tone wird mit der bestimmten interval Länge ausgegeben
-    tone(buzzerPinLH, 523, interval); // tone (C4)
+    // Ton mit der berechneten Dauer abspielen
+    tone(buzzerPinLH, 523, interval); // Frequenz: 523 Hz (C4), Dauer: interval
 }
