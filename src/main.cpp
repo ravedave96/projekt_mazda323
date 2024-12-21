@@ -3,7 +3,7 @@
 
 #define trigPinLH 6   // Pin für den Trigger des Ultraschallsensors
 #define echoPinLH 7   // Pin für das Echo des Ultraschallsensors
-#define buzzerPinLH 10 // Pin für den Summer (Buzzer)
+#define buzzerPinLH 10 // Pin für den Buzzer
 
 // Globale Variablen
 float distanzLH = 0;                      // Speichert die gemessene Distanz
@@ -12,7 +12,7 @@ unsigned long measurementIntervalLH = 500; // Zeitintervall zwischen den Messung
 
 // Funktionsprototypen
 void distanceLH(); // Funktion zur Distanzmessung
-void buzzerLH();   // Funktion zur Steuerung des Summers
+void buzzerLH();   // Funktion zur Steuerung des Buzzer
 
 void setup() {
     Serial.begin(9600);                 // Serielle Kommunikation starten
@@ -24,11 +24,11 @@ void setup() {
 void loop() {
     // Funktion zur Distanzmessung aufrufen
     distanceLH();
-    // Funktion zur kontinuierlichen Steuerung des Summers aufrufen
+    // Funktion zur kontinuierlichen Steuerung des Buzzer aufrufen
     buzzerLH();
 }
 
-// Funktion zur Distanzmessung in regelmäßigen Abständen
+// Funktion zur Distanzmessung in regelmässigen Abständen
 void distanceLH() {
     // Überprüfen, ob das Zeitintervall seit der letzten Messung abgelaufen ist
     if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
@@ -62,13 +62,13 @@ void distanceLH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Summers basierend auf der Distanz
+// Funktion zur Steuerung des Buzzers basierend auf der Distanz
 void buzzerLH() {
     int interval = 1000; // Standardintervall für den Ton
 
     // Tonintervall basierend auf der gemessenen Distanz bestimmen
     if (distanzLH < 0) { // Ungültige Distanz
-        noTone(buzzerPinLH); // Summer ausschalten
+        noTone(buzzerPinLH); // Buzzers ausschalten
         return;
     } else if (distanzLH >= 100) { // Grossse Distanz
         interval = 1000; // Langsamer Rhythmus
