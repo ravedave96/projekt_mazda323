@@ -37,18 +37,39 @@ Funktionen:
 ![„arduino mazda323“ (2)](https://github.com/user-attachments/assets/a6a8830c-5227-48ca-9794-3d8871c89bba)
 
 ## Projektbeschreibung
-Kurze Beschreibung der Vorgehensweise
-
-# Erstellung der Programmstruktur
+### Erstellung der Programmstruktur
 1. Funktionen definiert:
-   - umschalten() : manuelle Umschaltung von normalen Fahrbetrieb mit G-Kräfte Messung zur Parkhilfefunktion
+   - umschalten() : Funktion zum manuellen Umschalten von Beschleunigungsmesser auf Parkhilfe
    - Parhilfe() : jeweils LH/RH, Funktion zur Parkhilfe
      - dinstance() : jeweils LH/RH, Funktion zur Distanzmessung in regelmässigen Abständen
      - buzzer() : jeweils LH/RH, Funktion zur Steuerung des Buzzers basierend auf der Distanz
    - Beschleunigung() : Funktion zur G-Kräfte Messung
-
 2. Zuweisung Pin auf Arduino Board
 3. void setup() erstellt
+   
+### Erestellung einzelner Funktionen
+1. void loop()
+   - umschalten wird aufgerufen:
+     - Überwacht den Taster und wechselt den Zustand von schalter (true/false), wenn der Taster gedrückt wird.
+   - Verzweigung basierend auf schalter:
+      - Wenn der Schalter aktiv (true) ist:
+        - Die Funktionen ParkhilfeLH und ParkhilfeRH werden aufgerufen, um die Parkhilfen zu steuern.
+      - Wenn der Schalter inaktiv (false) ist:
+        - Die Funktion Beschleunigung wird aufgerufen, um die Beschleunigungsfunktion zu steuern.
+
+3. umschalten()
+   Die Funktion umschalten() hat folgende Aufgaben:
+
+Sie liest den Zustand eines Tasters ein, der mit dem Pin tasterPin verbunden ist.
+Sie erkennt einen Tastendruck, indem sie prüft, ob der Taster von LOW nach HIGH wechselt.
+Sie schaltet einen logischen Schalter (schalter) um.
+Sie steuert zwei Ausgänge (beschleunigungPin und parkPin) basierend auf dem Zustand des Schalters:
+Einer der Ausgänge wird auf HIGH gesetzt, während der andere auf LOW bleibt.
+Sie verwendet eine kurze Verzögerung (50 Millisekunden), um den Taster zu entprellen und unerwünschte Zustandswechsel zu verhindern.
+Das Programm sorgt dafür, dass durch jeden Tastendruck der Zustand der Ausgänge zuverlässig gewechselt wird, ohne durch Prellen gestört zu werden.
+
+5. Parhilfe()
+6. Beschleunigung()
 
 - Welche Teilfunktionen habt ihr einzeln getestet?
 - Gab es dabei Probleme, wenn ja welche?
