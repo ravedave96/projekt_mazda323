@@ -97,8 +97,119 @@ Diese Funktion ruft die Funktionen distance() und buzzer() auf:
 - 1x Drucktaster
 - 2x Piezo-Buzzer oder Lautsprecher
 - 1x Visuelles Ausgabegerät, z.B LCD-Bildschirm
-## Tests
-Kurze Beschreibung der Vorgehensweise
+## 1. Tests
+### 1.1 Vorgehen: 
+1. Testen einzelner Funktionen in einem anderen Branch.
+2. erfolgreich gestestete Funktion in Main Branch einfliessen lassen
+3. Main Branch testen
+### 1.2 Test Funktion Parkhilfe() in Branch ultrasonic
+#### 1. Version des Codes
+```
+// Funktion zur Parkhilfe rechte Seite
+void ParkhilfeRH () {
+    float zeit = 0, distanz = 0;
+    
+    // Trigger-Signal erzeugen
+    digitalWrite(trigPinRH, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinRH, HIGH); // Ultraschallsignal senden
+    delayMicroseconds(10);
+    digitalWrite(trigPinRH, LOW);
+
+    // Echo-Zeit messen
+    zeit = pulseIn(echoPinRH, HIGH, 30000); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
+    if (zeit == 0) {
+        // Keine valide Messung, Rückkehr aus der Funktion
+        Serial.println("Kein Echo empfangen");
+        noTone(buzzerPinRH); // Buzzer ausschalten, falls aktiv
+        return;
+    }
+
+    //Distanz berechnen in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
+    distanz = (zeit / 2) * 0.0344;
+
+    Serial.print("Distanz RH = ");
+    Serial.print(distanz);
+    Serial.println(" cm");
+
+    // Audio Distanz Signal
+    if (distanz >= 110) {
+        tone(buzzerPinRH, 523, 1000); // C4
+    } else if (distanz < 110 && distanz > 50) {
+        tone(buzzerPinRH, 523, 500);
+    } else {
+        tone(buzzerPinRH, 523, 100);
+    }
+    // Wartezeit vor der nächsten Messung
+    delay(500);
+}
+```
+#### Problemstellung
+Zuerst wurde die Distanzmessung sowie der Buzzer in derselben Funktion programmiert.
+Jedoch ergab sich das Problem, dass nach jeder Verzögerung (delay) der Ton auch pausiert wird. 
+Die Überschneidung der Speildauer des Tons und der Verzögerung am Ende der Funktion erzeugt einen abgehacktn Ton und er wird nicht kontinuierlich gespielt, währenddem die Messung durchgeführt wird.
+#### Lösung
+1. Die Funktion Parkhilfe wird in zwei Unterfunktionen aufgeteilt.
+   - dinstance(): Funktion zur Distanzmessung in regelmässigen Abständen
+   - buzzer(): Funktion zur Steuerung des Buzzers basierend auf der Distanz
+3. Verwendet millis() für das Timing anstelle von delay(). Dadurch wird sichergestellt, dass die Buzzer-Steuerung den Rest des Programms nicht blockiert. Durch den Verzicht auf delay()
+   kann das Programm die Abstandsmessung und die Ausführung anderer Aufgaben fortsetzen, ohne blockiert zu werden.
+#### 2. Version des Codes
+```
+// Funktion zur Distanzmessung in regelmässigen Abständen
+void distanceLH() {
+    // Überprüfen, ob das Zeitintervall seit der letzten Messung abgelaufen ist
+    if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
+        return; // Noch nicht Zeit für die nächste Messung
+    }
+    lastMeasurementTimeLH = millis(); // Zeit der letzten Messung aktualisieren
+
+    float zeit = 0; // Variable zur Speicherung der Echo-Zeit
+
+    // Ultraschallsensor auslösen (Trigger senden)
+    digitalWrite(trigPinLH, LOW);       // Trigger auf LOW setzen
+    delayMicroseconds(2);               // Kurze Pause
+    digitalWrite(trigPinLH, HIGH);      // Trigger auf HIGH setzen (10 µs Impuls)
+    delayMicroseconds(10);
+    digitalWrite(trigPinLH, LOW);       // Trigger wieder auf LOW setzen
+
+    // Dauer des Echos messen
+    zeit = pulseIn(echoPinLH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
+    if (zeit == 0) { // Kein Echo empfangen
+        Serial.println("Kein Echo empfangen");
+        distanzLH = -1; // Ungültigen Distanzwert zuweisen
+        return;
+    }
+
+    // Distanz in cm berechnen
+    distanzLH = (zeit / 2) * 0.0344;
+
+    // Distanz zur Debug-Ausgabe ausgeben
+    Serial.print("Distanz LH = ");
+    Serial.print(distanzLH);
+    Serial.println(" cm");
+}
+
+// Funktion zur Steuerung des Summers basierend auf der Distanz
+void buzzerLH() {
+    int interval = 1000; // Standardintervall für den Ton
+
+    // Tonintervall basierend auf der gemessenen Distanz bestimmen
+    if (distanzLH < 0) { // Ungültige Distanz
+        noTone(buzzerPinLH); // Summer ausschalten
+        return;
+    } else if (distanzLH >= 100) { // Grossse Distanz
+        interval = 1000; // Langsamer Rhythmus
+    } else if (distanzLH < 100 && distanzLH > 55) { // Mittlere Distanz
+        interval = 500;  // Mittlerer Rhythmus
+    } else { // Kleine Distanz
+        interval = 200;  // Schneller Rhythmus
+    }
+
+    // Ton mit der berechneten Dauer abspielen
+    tone(buzzerPinLH, 523, interval); // Frequenz: 523 Hz (C4), Dauer: interval
+}
+```
 
 - Was sind die Testscenarios?
 - Beschreibung oder Bild das Testziel aufzeigt
