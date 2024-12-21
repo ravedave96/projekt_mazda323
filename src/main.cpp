@@ -6,9 +6,9 @@
 #define buzzerPinLH 10
 
 // Global variables
-float distanz = 0;                      // Stores the measured distance
-unsigned long lastMeasurementTime = 0;  // Tracks the last measurement time
-unsigned long measurementInterval = 500; // Interval for distance measurement in ms
+float distanz = 0;
+unsigned long lastMeasurementTime = 0;  // speichert letzte Messung der Distanz in ms
+unsigned long measurementInterval = 500; // interval für Distanz Messung ist 500 ms
 
 // Function prototypes
 void distanceLH();
@@ -22,62 +22,61 @@ void setup() {
 }
 
 void loop() {
-    // Call the distance measurement function
+    // Distanz wird alle 500ms gemessen
     distanceLH();
-    // Continuously handle buzzer logic
+    // buzzer kann tone kontinuierlich ausgeben ohne von der Distanz Messung unterbrochen zu werden.
     buzzerLH();
 }
 
-// Function to measure distance at regular intervals
-void distanceLH() {
-    // Check if it's time to measure distance
+void distanceLH() { //millis() wird verwendet, da delay() die ganze funktion blockiert
+    // Verzweigung ob Messung ansteht oder nicht
     if (millis() - lastMeasurementTime < measurementInterval) {
-        return; // Not yet time for the next measurement
+        return; // noch nicht Zeit für die Messung
     }
-    lastMeasurementTime = millis(); // Update the last measurement time
+    lastMeasurementTime = millis();
 
     float zeit = 0;
 
-    // Trigger the ultrasonic sensor
+    //  ultrasonic senden
     digitalWrite(trigPinLH, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPinLH, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPinLH, LOW);
 
-    // Measure the echo pulse duration
+    // ultrasonic echo pulse duration messen
     zeit = pulseIn(echoPinLH, HIGH, 30000); // Timeout of 30ms
     if (zeit == 0) {
         Serial.println("Kein Echo empfangen");
-        distanz = -1; // Assign invalid distance for error handling
+        distanz = -1; // für Fehler Erkennung
         return;
     }
 
-    // Calculate the distance in cm
+    // distance in cm
     distanz = (zeit / 2) * 0.0344;
 
-    // Print the distance for debugging
     Serial.print("Distanz LH = ");
     Serial.print(distanz);
     Serial.println(" cm");
 }
 
-// Function to control the buzzer based on distance
 void buzzerLH() {
-    int interval = 1000; // Default tone duration
+    int interval = 1000; // Voreinstellung tone interval
 
-    // Determine the tone duration based on distance
+    // Bestimmung tone interval zur passenden Distanz
     if (distanz < 0) {
-        noTone(buzzerPinLH); // Turn off the buzzer for invalid distances
+        noTone(buzzerPinLH);
+        // Buzzer gibt kein Ton aus, wenn Distanz weniger 0 ist.
+        // bei Fehelrmessung ist Distanz = -1, damit es klar ist.
         return;
     } else if (distanz >= 100) {
-        interval = 1000; // Slow rhythm for far distances
+        interval = 1000; // kleiner interval für grössere Distanzen
     } else if (distanz < 100 && distanz > 55) {
-        interval = 500;  // Medium rhythm for mid-range distances
+        interval = 500;  // mittlerer interval für mittlere Distanzen
     } else {
-        interval = 200;  // Fast rhythm for close distances
+        interval = 200;  // schneller interval für kleine Distanzen
     }
 
-    // Play the tone with the determined interval
-    tone(buzzerPinLH, 523, interval); // Frequency: 523 Hz (C4), duration: interval
+    // tone wird mit der bestimmten interval Länge ausgegeben
+    tone(buzzerPinLH, 523, interval); // tone (C4)
 }
