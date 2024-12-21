@@ -190,13 +190,13 @@ void distanceLH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Summers basierend auf der Distanz
+// Funktion zur Steuerung des Buzzer basierend auf der Distanz
 void buzzerLH() {
     int interval = 1000; // Standardintervall für den Ton
 
     // Tonintervall basierend auf der gemessenen Distanz bestimmen
     if (distanzLH < 0) { // Ungültige Distanz
-        noTone(buzzerPinLH); // Summer ausschalten
+        noTone(buzzerPinLH); // Buzzer ausschalten
         return;
     } else if (distanzLH >= 100) { // Grossse Distanz
         interval = 1000; // Langsamer Rhythmus
