@@ -38,6 +38,7 @@ void distanceLH() {
 
     float zeit = 0; // Variable zur Speicherung der Echo-Zeit
 
+
     // Ultraschallsensor auslösen (Trigger senden)
     digitalWrite(trigPinLH, LOW);       // Trigger auf LOW setzen
     delayMicroseconds(2);               // Kurze Pause
