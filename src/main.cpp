@@ -22,13 +22,19 @@ float distanzLH = 0;                      // Speichert die gemessene Distanz
 unsigned long lastMeasurementTimeLH = 0;  // Speichert die Zeit des letzten Messvorgangs
 unsigned long measurementIntervalLH = 500; // Zeitintervall zwischen den Messungen in Millisekunden
 
+float distanzRH = 0;                      // Speichert die gemessene Distanz
+unsigned long lastMeasurementTimeRH = 0;  // Speichert die Zeit des letzten Messvorgangs
+unsigned long measurementIntervalRH = 500; // Zeitintervall zwischen den Messungen in Millisekunden
+
 
 // Funktionsprototypen
 void umschalten();
 void ParkhilfeLH();
-void distanceLH(); // Funktion zur Distanzmessung
-void buzzerLH();   // Funktion zur Steuerung des Buzzer
+void distanceLH(); // Funktion zur Distanzmessung Links
+void buzzerLH();   // Funktion zur Steuerung des Buzzer Links
 void ParkhilfeRH();
+void distanceRH(); // Funktion zur Distanzmessung Rechts
+void buzzerRH();   // Funktion zur Steuerung des Buzzer Rechts
 void Beschleunigung();
 
 void setup() {
@@ -43,7 +49,7 @@ void setup() {
 
     pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
     pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
-    pinMode(trigPinRH, OUTPUT);     // Eingang 8, TriggerRH
+    pinMode(trigPinRH, OUTPUT);     // Ausgang 8, TriggerRH
     pinMode(trigPinLH, INPUT);      // Eingang 9, EchoRH
     pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
     pinMode(buzzerPinRH, OUTPUT);   // Ausgang 11, Buzzer RH
@@ -118,7 +124,7 @@ void distanceLH() {
     // Dauer des Echos messen
     zeit = pulseIn(echoPinLH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
     if (zeit == 0) { // Kein Echo empfangen
-        Serial.println("Kein Echo empfangen");
+        Serial.println("LH Kein Echo empfangen");
         distanzLH = -1; // Ungültigen Distanzwert zuweisen
         return;
     }
@@ -132,7 +138,7 @@ void distanceLH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Buzzers basierend auf der Distanz
+// Funktion zur Steuerung des Buzzers basierend auf der Distanz linke Seite
 void buzzerLH() {
     int interval = 1000; // Standardintervall für den Ton
 
@@ -154,42 +160,66 @@ void buzzerLH() {
 
 // Funktion zur Parkhilfe rechte Seite
 void ParkhilfeRH () {
-    float zeit = 0, distanz = 0;
+    // Funktion zur Distanzmessung aufrufen
+    distanceRH();
+    // Funktion zur kontinuierlichen Steuerung des Buzzer aufrufen
+    buzzerRH();
+}
 
-    // Trigger-Signal erzeugen
-    digitalWrite(trigPinRH, LOW);
+// Funktion zur Distanzmessung in regelmässigen Abständen rechte Seite
+void distanceRH() {
+    // Überprüfen, ob das Zeitintervall seit der letzten Messung abgelaufen ist
+    if (millis() - lastMeasurementTimeRH < measurementIntervalRH) {
+        return; // Noch nicht Zeit für die nächste Messung
+    }
+    lastMeasurementTimeRH = millis(); // Zeit der letzten Messung aktualisieren
+
+    float zeit = 0; // Variable zur Speicherung der Echo-Zeit
+
+    // Ultraschallsensor auslösen (Trigger senden)
+    digitalWrite(trigPinRH, LOW);       // Trigger auf LOW setzen
     delayMicroseconds(2);
-    digitalWrite(trigPinRH, HIGH); // Ultraschallsignal senden
+    digitalWrite(trigPinRH, HIGH);      // Trigger auf HIGH setzen (10 µs Impuls)
     delayMicroseconds(10);
-    digitalWrite(trigPinRH, LOW);
+    digitalWrite(trigPinRH, LOW);       // Trigger wieder auf LOW setzen
 
-    // Echo-Zeit messen
-    zeit = pulseIn(echoPinRH, HIGH, 30000); //liest echoPin und misst die Zeit zwischen HIGH LOW und wieder HIGH
-    if (zeit == 0) {
-        // Keine valide Messung, Rückkehr aus der Funktion
-        Serial.println("Kein Echo empfangen");
-        noTone(buzzerPinRH); // Buzzer ausschalten, falls aktiv
+    // Dauer des Echos messen
+    zeit = pulseIn(echoPinRH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
+    if (zeit == 0) { // Kein Echo empfangen
+        Serial.println("RH Kein Echo empfangen");
+        distanzRH = -1; // Ungültigen Distanzwert zuweisen
         return;
     }
 
-    //Distanz berechnen in cm, sound umgerechnet von m/s in cm/µs (0.0344 cm/µs)
-    distanz = (zeit / 2) * 0.0344;
+    // Distanz in cm berechnen
+    distanzRH = (zeit / 2) * 0.0344;
 
+    // Distanz ausgeben
     Serial.print("Distanz RH = ");
-    Serial.print(distanz);
+    Serial.print(distanzRH);
     Serial.println(" cm");
-
-    // Audio Distanz Signal
-    if (distanz >= 110) {
-        tone(buzzerPinRH, 523, 1000); // C4
-    } else if (distanz < 110 && distanz > 50) {
-        tone(buzzerPinRH, 523, 500);
-    } else {
-        tone(buzzerPinRH, 523, 100);
-    }
-    // Wartezeit vor der nächsten Messung
-    delay(500);
 }
+
+// Funktion zur Steuerung des Buzzers basierend auf der Distanz rechte Seite
+void buzzerRH() {
+    int interval = 1000; // Standardintervall für den Ton
+
+    // Tonintervall basierend auf der gemessenen Distanz bestimmen
+    if (distanzRH < 0) { // Ungültige Distanz
+        noTone(buzzerPinRH); // Buzzer ausschalten
+        return;
+    } else if (distanzRH >= 100) { // Grosse Distanz
+        interval = 1000; // Langsamer Rhythmus
+    } else if (distanzRH < 100 && distanzRH > 55) { // Mittlere Distanz
+        interval = 500;  // Mittlerer Rhythmus
+    } else { // Kleine Distanz
+        interval = 200;  // Schneller Rhythmus
+    }
+
+    // Ton mit der berechneten Dauer abspielen
+    tone(buzzerPinRH, 523, interval); // Frequenz: 523 Hz (C4), Dauer: interval
+}
+
 
 void Beschleunigung () {
     //Platzhalter für die Beschleunigungsfunktion
