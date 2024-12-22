@@ -112,7 +112,7 @@ void distanceLH() {
     }
     lastMeasurementTimeLH = millis(); // Zeit der letzten Messung aktualisieren
 
-    float zeit = 0; // Variable zur Speicherung der Echo-Zeit
+    float zeitLH = 0; // Variable zur Speicherung der Echo-Zeit
 
     // Ultraschallsensor auslösen (Trigger senden)
     digitalWrite(trigPinLH, LOW);       // Trigger auf LOW setzen
@@ -122,15 +122,15 @@ void distanceLH() {
     digitalWrite(trigPinLH, LOW);       // Trigger wieder auf LOW setzen
 
     // Dauer des Echos messen
-    zeit = pulseIn(echoPinLH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
-    if (zeit == 0) { // Kein Echo empfangen
+    zeitLH = pulseIn(echoPinLH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
+    if (zeitLH == 0) { // Kein Echo empfangen
         Serial.println("LH Kein Echo empfangen");
         distanzLH = -1; // Ungültigen Distanzwert zuweisen
         return;
     }
 
     // Distanz in cm berechnen
-    distanzLH = (zeit / 2) * 0.0344;
+    distanzLH = (zeitLH / 2) * 0.0344;
 
     // Distanz ausgeben
     Serial.print("Distanz LH = ");
@@ -140,22 +140,22 @@ void distanceLH() {
 
 // Funktion zur Steuerung des Buzzers basierend auf der Distanz linke Seite
 void buzzerLH() {
-    int interval = 1000; // Standardintervall für den Ton
+    int intervalLH = 1000; // Standardintervall für den Ton
 
     // Tonintervall basierend auf der gemessenen Distanz bestimmen
     if (distanzLH < 0) { // Ungültige Distanz
         noTone(buzzerPinLH); // Buzzer ausschalten
         return;
     } else if (distanzLH >= 100) { // Grosse Distanz
-        interval = 1000; // Langsamer Rhythmus
+        intervalLH = 1000; // Langsamer Rhythmus
     } else if (distanzLH < 100 && distanzLH > 55) { // Mittlere Distanz
-        interval = 500;  // Mittlerer Rhythmus
+        intervalLH = 500;  // Mittlerer Rhythmus
     } else { // Kleine Distanz
-        interval = 200;  // Schneller Rhythmus
+        intervalLH = 200;  // Schneller Rhythmus
     }
 
     // Ton mit der berechneten Dauer abspielen
-    tone(buzzerPinLH, 523, interval); // Frequenz: 523 Hz (C4), Dauer: interval
+    tone(buzzerPinLH, 523, intervalLH); // Frequenz: 523 Hz (C4), Dauer: interval
 }
 
 // Funktion zur Parkhilfe rechte Seite
@@ -174,7 +174,7 @@ void distanceRH() {
     }
     lastMeasurementTimeRH = millis(); // Zeit der letzten Messung aktualisieren
 
-    float zeit = 0; // Variable zur Speicherung der Echo-Zeit
+    float zeitRH = 0; // Variable zur Speicherung der Echo-Zeit
 
     // Ultraschallsensor auslösen (Trigger senden)
     digitalWrite(trigPinRH, LOW);       // Trigger auf LOW setzen
@@ -184,15 +184,15 @@ void distanceRH() {
     digitalWrite(trigPinRH, LOW);       // Trigger wieder auf LOW setzen
 
     // Dauer des Echos messen
-    zeit = pulseIn(echoPinRH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
-    if (zeit == 0) { // Kein Echo empfangen
+    zeitRH = pulseIn(echoPinRH, HIGH, 30000); // Echo-Puls messen (Timeout: 30 ms)
+    if (zeitRH == 0) { // Kein Echo empfangen
         Serial.println("RH Kein Echo empfangen");
         distanzRH = -1; // Ungültigen Distanzwert zuweisen
         return;
     }
 
     // Distanz in cm berechnen
-    distanzRH = (zeit / 2) * 0.0344;
+    distanzRH = (zeitRH / 2) * 0.0344;
 
     // Distanz ausgeben
     Serial.print("Distanz RH = ");
@@ -202,22 +202,22 @@ void distanceRH() {
 
 // Funktion zur Steuerung des Buzzers basierend auf der Distanz rechte Seite
 void buzzerRH() {
-    int interval = 1000; // Standardintervall für den Ton
+    int intervalRH = 1000; // Standardintervall für den Ton
 
     // Tonintervall basierend auf der gemessenen Distanz bestimmen
     if (distanzRH < 0) { // Ungültige Distanz
         noTone(buzzerPinRH); // Buzzer ausschalten
         return;
     } else if (distanzRH >= 100) { // Grosse Distanz
-        interval = 1000; // Langsamer Rhythmus
+        intervalRH = 1000; // Langsamer Rhythmus
     } else if (distanzRH < 100 && distanzRH > 55) { // Mittlere Distanz
-        interval = 500;  // Mittlerer Rhythmus
+        intervalRH = 500;  // Mittlerer Rhythmus
     } else { // Kleine Distanz
-        interval = 200;  // Schneller Rhythmus
+        intervalRH = 200;  // Schneller Rhythmus
     }
 
     // Ton mit der berechneten Dauer abspielen
-    tone(buzzerPinRH, 523, interval); // Frequenz: 523 Hz (C4), Dauer: interval
+    tone(buzzerPinRH, 523, intervalRH); // Frequenz: 523 Hz (C4), Dauer: interval
 }
 
 
