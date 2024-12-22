@@ -50,23 +50,22 @@ void setup() {
     pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
     pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
     pinMode(trigPinRH, OUTPUT);     // Ausgang 8, TriggerRH
-    pinMode(trigPinLH, INPUT);      // Eingang 9, EchoRH
+    pinMode(echoPinRH, INPUT);      // Eingang 9, EchoRH
     pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
     pinMode(buzzerPinRH, OUTPUT);   // Ausgang 11, Buzzer RH
 
-    tone(buzzerPinLH, 1000, 2000);
-    tone(buzzerPinRH, 1000, 2000);
+    tone(buzzerPinLH, 1000, 50);
+    tone(buzzerPinRH, 1000, 50);
 }
 
 void loop() {
-    umschalten();
-
-    if (schalter) {
-        ParkhilfeLH();
-        ParkhilfeRH();
-    } else {
-        Beschleunigung();
-    }
+   umschalten();
+        if (schalter) {
+            ParkhilfeLH();
+            ParkhilfeRH();
+        } else {
+            Beschleunigung();
+        }
 }
 
 // Funktion zum manuellen Umschalten von Beschleunigungsmesser auf Parkhilfe
@@ -77,23 +76,12 @@ void umschalten () {
     // Prüfen, ob der Taster gedrückt wurde (Zustandsänderung von LOW nach HIGH)
     if (push == HIGH && lastpush == LOW) {
         schalter = !schalter;   // Taster-Zustand umkehren
-
-        // Zustand der Ausgänge basierend auf dem Taster-Zustand setzen
-        if (schalter) {
-            digitalWrite(beschleunigungPin, HIGH); // Ausgang 13 HIGH
-            digitalWrite(parkPin, LOW);  // Ausgang 12 LOW
-        } else {
-            digitalWrite(beschleunigungPin, LOW);  // Ausgang 13 LOW
-            digitalWrite(parkPin, HIGH); // Ausgang 12 HIGH
-        }
     }
-
     // Verzögerung für Entprellung
     delay(50);
 
     // Aktuellen Zustand Tasters speichern
     lastpush = push;
-
 }
 
 // Funktion zur Parkhilfe linke Seite
