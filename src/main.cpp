@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <NewTone.h> // Bibliothek für die unabhängige Steuerung der Buzzer
 
 // Pins für die linke Seite
 #define trigPinLH 6   // Pin für den Trigger des Ultraschallsensors (links)
@@ -12,21 +11,26 @@
 #define buzzerPinRH 11 // Pin für den Buzzer (rechts)
 
 // Globale Variablen für die linke Seite
-float distanzLH = 0;                     // Speichert die gemessene Distanz (links)
-unsigned long lastMeasurementTimeLH = 0; // Speichert die Zeit des letzten Messvorgangs (links)
+unsigned long distanzLH = 0;                      // Speichert die gemessene Distanz (links)
+unsigned long lastMeasurementTimeLH = 0;  // Speichert die Zeit des letzten Messvorgangs (links)
+unsigned long lastBuzzerToggleLH = 0;     // Speichert die Zeit der letzten Buzzer-Aktivierung (links)
+bool buzzerOnLH = false;                  // Zustand des Buzzers (links)
 
 // Globale Variablen für die rechte Seite
-float distanzRH = 0;                     // Speichert die gemessene Distanz (rechts)
-unsigned long lastMeasurementTimeRH = 0; // Speichert die Zeit des letzten Messvorgangs (rechts)
+unsigned long distanzRH = 0;                      // Speichert die gemessene Distanz (rechts)
+unsigned long lastMeasurementTimeRH = 0;  // Speichert die Zeit des letzten Messvorgangs (rechts)
+unsigned long lastBuzzerToggleRH = 0;     // Speichert die Zeit der letzten Buzzer-Aktivierung (rechts)
+bool buzzerOnRH = false;                  // Zustand des Buzzers (rechts)
 
 // Gemeinsame Konfiguration
-unsigned long measurementInterval = 500; // Zeitintervall zwischen den Messungen in Millisekunden
+unsigned long measurementIntervalLH = 500; // Linke Seite
+unsigned long measurementIntervalRH = 500; // Rechte Seite
 
 // Funktionsprototypen
 void distanceLH(); // Funktion zur Distanzmessung (links)
-void buzzerLH();   // Funktion zur Steuerung des Buzzers (links)
+void buzzerLH(unsigned int frequencyLH, unsigned long intervalLH); // Tonsteuerung für Buzzer (links)
 void distanceRH(); // Funktion zur Distanzmessung (rechts)
-void buzzerRH();   // Funktion zur Steuerung des Buzzers (rechts)
+void buzzerRH(unsigned int frequencyRH, unsigned long intervalRH); // Tonsteuerung für Buzzer (rechts)
 
 void setup() {
     Serial.begin(9600);                 // Serielle Kommunikation starten
@@ -45,16 +49,22 @@ void setup() {
 void loop() {
     // Linke Seite
     distanceLH();
-    buzzerLH();
+    if (distanzLH > 0 && distanzLH < 200) { // Nur innerhalb eines gültigen Bereichs 0-2m
+        unsigned long intervalLH = (0.11 * (distanzLH * distanzLH) + 50);
+        buzzerLH(526, (intervalLH * 2)); // Frequenz basierend auf der Distanz
+    }
 
     // Rechte Seite
     distanceRH();
-    buzzerRH();
+    if (distanzRH > 0 && distanzRH < 200) { // Nur innerhalb eines gültigen Bereichs 0-2m
+        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
+        buzzerRH(526, (intervalRH * 2)); // Frequenz basierend auf der Distanz
+    }
 }
 
 // Funktion zur Distanzmessung (links)
 void distanceLH() {
-    if (millis() - lastMeasurementTimeLH < measurementInterval) {
+    if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
         return; // Noch nicht Zeit für die nächste Messung
     }
     lastMeasurementTimeLH = millis(); // Zeit der letzten Messung aktualisieren
@@ -84,20 +94,22 @@ void distanceLH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Buzzers (links)
-void buzzerLH() {
-    if (distanzLH < 0) {
-        noNewTone(buzzerPinLH); // Ton ausschalten, wenn keine Distanz gemessen wird
-        return;
-    }
+// Funktion zur Tonsteuerung (links)
+void buzzerLH(unsigned int frequencyLH, unsigned long intervalLH) {
+    unsigned long startTime = millis();
+    unsigned long halfPeriod = 1000000L / (1000 * 2); // // Halbperiode für 1 kHz (500 µs)
 
-    int frequencyLH = max(100, 1000 - (0.11 * (distanzLH * distanzLH))); // Frequenz berechnen (Mindestfrequenz 100 Hz)
-    NewTone(buzzerPinLH, frequencyLH); // Ton mit der berechneten Frequenz abspielen
+    while (millis() - startTime < intervalLH) {
+        digitalWrite(buzzerPinLH, HIGH);
+        delayMicroseconds(halfPeriod);
+        digitalWrite(buzzerPinLH, LOW);
+        delayMicroseconds(halfPeriod);
+    }
 }
 
 // Funktion zur Distanzmessung (rechts)
 void distanceRH() {
-    if (millis() - lastMeasurementTimeRH < measurementInterval) {
+    if (millis() - lastMeasurementTimeRH < measurementIntervalRH) {
         return; // Noch nicht Zeit für die nächste Messung
     }
     lastMeasurementTimeRH = millis(); // Zeit der letzten Messung aktualisieren
@@ -127,14 +139,16 @@ void distanceRH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Buzzers (rechts)
-void buzzerRH() {
-    if (distanzRH < 0) {
-        noNewTone(buzzerPinRH); // Ton ausschalten, wenn keine Distanz gemessen wird
-        return;
-    }
+// Funktion zur Tonsteuerung (rechts)
+void buzzerRH(unsigned int frequencyRH, unsigned long intervalRH) {
+    unsigned long startTime = millis();
+    unsigned long halfPeriod = 1000000L / (1000 * 2); // // Halbperiode für 1 kHz (500 µs)
 
-    int frequencyRH = max(100, 1000 - (0.11 * (distanzRH * distanzRH))); // Frequenz berechnen (Mindestfrequenz 100 Hz)
-    NewTone(buzzerPinRH, frequencyRH); // Ton mit der berechneten Frequenz abspielen
+    while (millis() - startTime < intervalRH) {
+        digitalWrite(buzzerPinRH, HIGH);
+        delayMicroseconds(halfPeriod);
+        digitalWrite(buzzerPinRH, LOW);
+        delayMicroseconds(halfPeriod);
+    }
 }
 
