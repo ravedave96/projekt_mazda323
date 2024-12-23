@@ -26,6 +26,7 @@ bool buzzerOnRH = false;                  // Zustand des Buzzers (rechts)
 unsigned long measurementIntervalLH = 500; // Linke Seite
 unsigned long measurementIntervalRH = 500; // Rechte Seite
 
+
 // Funktionsprototypen
 void distanceLH(); // Funktion zur Distanzmessung (links)
 void buzzerLH(unsigned int frequencyLH, unsigned long intervalLH); // Tonsteuerung für Buzzer (links)
