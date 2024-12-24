@@ -102,6 +102,23 @@ void ParkhilfeLH () {
     // Funktion zur kontinuierlichen Steuerung des Buzzer aufrufen
 }
 
+// Funktion zur Parkhilfe rechte Seite
+void ParkhilfeRH () {
+    // Funktion zur Distanzmessung aufrufen
+    distanceRH();
+    if (distanzRH > 0 && distanzRH < 300) {
+        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
+
+        buzzerRH(intervalRH);
+    } else {
+        analogWrite(buzzerPinRH, LOW);
+    }
+}
+
+void Beschleunigung () {
+    //Platzhalter für die Beschleunigungsfunktion
+}
+
 // Funktion zur Distanzmessung in regelmässigen Abständen linke Seite
 void distanceLH() {
     // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
@@ -150,19 +167,6 @@ void buzzerLH(unsigned long intervalLH) { //intervalLH: Zeitdauer in Millisekund
     }
 }
 
-// Funktion zur Parkhilfe rechte Seite
-void ParkhilfeRH () {
-    // Funktion zur Distanzmessung aufrufen
-    distanceRH();
-    if (distanzRH > 0 && distanzRH < 300) {
-        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
-
-        buzzerRH(intervalRH);
-    } else {
-        analogWrite(buzzerPinRH, LOW);
-    }
-}
-
 // Funktion zur Distanzmessung in regelmässigen Abständen rechte Seite
 void distanceRH() {
     // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
@@ -208,8 +212,6 @@ void buzzerRH(unsigned long intervalRH) {
     }
 }
 
-void Beschleunigung () {
-    //Platzhalter für die Beschleunigungsfunktion
-}
+
 
 
