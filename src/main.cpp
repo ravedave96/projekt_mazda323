@@ -3,12 +3,12 @@
 // Pins für die linke Seite
 #define trigPinLH 6   // Pin für den Trigger des Ultraschallsensors (links)
 #define echoPinLH 7   // Pin für das Echo des Ultraschallsensors (links)
-#define buzzerPinLH 12 // Pin für den Buzzer (links)
+#define buzzerPinLH 10 // Pin für den Buzzer (links)(analog)
 
 // Pins für die rechte Seite
 #define trigPinRH 8   // Pin für den Trigger des Ultraschallsensors (rechts)
 #define echoPinRH 9   // Pin für das Echo des Ultraschallsensors (rechts)
-#define buzzerPinRH 13 // Pin für den Buzzer (rechts)
+#define buzzerPinRH 11 // Pin für den Buzzer (rechts)(analog)
 
 // Globale Variablen für die linke Seite
 float distanzLH = 0;                      // Speichert die gemessene Distanz (links)
@@ -52,17 +52,17 @@ void loop() {
         //map() kann auch eingefügt werden. map(distanz, 1, 200, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
         buzzerLH(intervalLH); // Aktiviert den Buzzer mit dem berechneten Intervall.
     } else {
-        digitalWrite(buzzerPinLH, LOW); // Buzzer ausschalten, wenn Distanz ausserhalb des Bereichs
+        analogWrite(buzzerPinLH, LOW); // Buzzer ausschalten, wenn Distanz ausserhalb des Bereichs
     }
 
     // Rechte Seite
     distanceRH();
-    if (distanzRH > 0 && distanzRH < 300) { // Nur innerhalb eines gültigen Bereichs 0-3m
-        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);// quadratische Funktion, so dass die Dauer des Ton mit abnehmender Distanz kürzer wird
-        //map() kann auch eingefügt werden. map(distanz, 1, 200, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
-        buzzerRH(intervalRH); // Aktiviert den Buzzer mit dem berechneten Intervall.
+    if (distanzRH > 0 && distanzRH < 300) {
+        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
+
+        buzzerRH(intervalRH);
     } else {
-        digitalWrite(buzzerPinRH, LOW); // Buzzer ausschalten, wenn Distanz ausserhalb des Bereichs
+        analogWrite(buzzerPinRH, LOW);
     }
 }
 
@@ -110,7 +110,7 @@ void buzzerLH(unsigned long intervalLH) { //intervalLH: Zeitdauer in Millisekund
     if (millis() - previousBuzzerTimeLH >= intervalLH) {
         previousBuzzerTimeLH = millis(); // Zeit aktualisieren, speichert den Zeitpunkt der letzten Buzzer-Aktivierung.
         buzzerStateLH = !buzzerStateLH; // Buzzer-Zustand wird invertiert
-        digitalWrite(buzzerPinLH, buzzerStateLH ? HIGH : LOW); //Ternäre Bedingung: buzzerStateLH == true: HIGH, buzzerStateLH == false: LOW
+        analogWrite(buzzerPinLH, buzzerStateLH ? 128 : LOW); //Ternäre Bedingung: buzzerStateLH == true: 128 (50% von Frequenz 255, was einem C4 Ton entspricht), buzzerStateLH == false: LOW
     }
 }
 
@@ -149,15 +149,12 @@ void distanceRH() {
 }
 
 // Funktion zur Tonsteuerung (rechts)
-void buzzerRH(unsigned long intervalRH) { //intervalRH: Zeitdauer in Millisekunden, wie lange der Buzzer an- oder ausgeschaltet bleiben soll.
-    static bool buzzerStateRH = false; // Aktueller Zustand des Buzzers (rechts), Initialwert: false (Buzzer ist zu Beginn ausgeschaltet).
+void buzzerRH(unsigned long intervalRH) {
+    static bool buzzerStateRH = false;
 
-    //millis(): gibt die Zeit seit dem Start des Mikrocontrollers in Millisekunden zurück.
-    //aktuelle Zeit (millis()) - letzte Aktivierungszeit (previousBuzzerTimeLH) >= dem angegebenen Intervall (intervalLH)
-    //wenn ja, ist es Zeit, den Zustand des Buzzers zu wechseln (An oder Aus).
     if (millis() - previousBuzzerTimeRH >= intervalRH) {
-        previousBuzzerTimeRH = millis(); // Zeit aktualisieren, speichert den Zeitpunkt der letzten Buzzer-Aktivierung.
-        buzzerStateRH = !buzzerStateRH; // Buzzer-Zustand wird invertiert
-        digitalWrite(buzzerPinRH, buzzerStateRH ? HIGH : LOW);
+        previousBuzzerTimeRH = millis();
+        buzzerStateRH = !buzzerStateRH;
+        analogWrite(buzzerPinRH, buzzerStateRH ? 128 : LOW);
     }
 }
