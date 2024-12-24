@@ -3,7 +3,6 @@
 
 // Zuweisung Pin auf Arduino Board
 #define tasterPin 2
-#define parkPin 12
 #define beschleunigungPin 13
 
 #define trigPinLH 6 // Pin für den Trigger des Ultraschallsensors (links)
@@ -48,10 +47,8 @@ void setup() {
     Serial.begin(9600);
 
     pinMode(tasterPin, INPUT);          // Eingang  2, Taster
-    pinMode(parkPin, OUTPUT);           // Ausgang 12, Parkhilfe
     pinMode(beschleunigungPin, OUTPUT); // Ausgang 13, Beschleunigung
 
-    digitalWrite(parkPin, LOW);
     digitalWrite(beschleunigungPin, LOW);
 
     pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
@@ -69,6 +66,8 @@ void loop() {
             ParkhilfeRH();
         } else {
             Beschleunigung();
+            analogWrite(buzzerPinLH, LOW);
+            analogWrite(buzzerPinRH, LOW);
         }
 }
 
