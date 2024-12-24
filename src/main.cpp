@@ -3,7 +3,8 @@
 
 // Zuweisung Pin auf Arduino Board
 #define tasterPin 2
-#define beschleunigungPin 13
+
+#define MPU6050_ADDR 0x68 // Alternativ AD0 auf HIGH setzen --> Adresse = 0x69
 
 #define trigPinLH 6 // Pin für den Trigger des Ultraschallsensors (links)
 #define echoPinLH 7 // Pin für das Echo des Ultraschallsensors (links)
@@ -31,6 +32,12 @@ unsigned long previousBuzzerTimeRH = 0; // Zeit der letzten Buzzer-Aktivierung (
 unsigned long measurementIntervalLH = 500; // Mindestzeitabstände zwischen zwei Messungen für die linke Seite (in Millisekunden).
 unsigned long measurementIntervalRH = 500; // Mindestzeitabstände zwischen zwei Messungen für die rechte Seite (in Millisekunden).
 
+// Globale Variablen Beschleunigung
+int16_t accX, accY, accZ, gyroX, gyroY, gyroZ, tRaw; // Rohdaten für Beschleunigung, Gyroskop und Temperatur
+char result[7]; // Temporärer String für die Umwandlung in Text
+unsigned long lastAccelTime = 0;
+const unsigned long accelInterval = 1000; // Intervall für Beschleunigungsmessung (1 Sekunde)
+
 // Main-Funktionsprototypen
 void umschalten();
 void ParkhilfeLH();
@@ -45,11 +52,15 @@ void buzzerRH(unsigned long intervalRH); // Tonsteuerung für Buzzer (rechts)
 
 void setup() {
     Serial.begin(9600);
+    Wire.begin(); // I²C-Kommunikation initialisieren
+
+    // MPU6050 aufwecken
+    Wire.beginTransmission(MPU6050_ADDR);
+    Wire.write(0x6B); // PWR_MGMT_1-Register
+    Wire.write(0);    // Wake-up-Befehl
+    Wire.endTransmission(true);
 
     pinMode(tasterPin, INPUT);          // Eingang  2, Taster
-    pinMode(beschleunigungPin, OUTPUT); // Ausgang 13, Beschleunigung
-
-    digitalWrite(beschleunigungPin, LOW);
 
     pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
     pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
@@ -115,8 +126,37 @@ void ParkhilfeRH () {
 }
 
 void Beschleunigung () {
-    //Platzhalter für die Beschleunigungsfunktion
-}
+        if (millis() - lastAccelTime >= accelInterval) {
+            lastAccelTime = millis(); // Aktualisiere die Zeit der letzten Messung
+
+            // Register von 0x3B (ACCEL_XOUT_H) anfordern
+            Wire.beginTransmission(MPU6050_ADDR);
+            Wire.write(0x3B); // Startadresse der Register
+            Wire.endTransmission(false); // Verbindung bleibt aktiv
+            Wire.requestFrom(MPU6050_ADDR, 14, true); // 14 Register (7 x 2 Bytes) anfordern
+
+            // Rohdaten lesen und zusammenfügen
+            accX = Wire.read() << 8 | Wire.read(); // ACCEL_XOUT_H und ACCEL_XOUT_L
+            accY = Wire.read() << 8 | Wire.read(); // ACCEL_YOUT_H und ACCEL_YOUT_L
+            accZ = Wire.read() << 8 | Wire.read(); // ACCEL_ZOUT_H und ACCEL_ZOUT_L
+            tRaw = Wire.read() << 8 | Wire.read(); // TEMP_OUT_H und TEMP_OUT_L
+            gyroX = Wire.read() << 8 | Wire.read(); // GYRO_XOUT_H und GYRO_XOUT_L
+            gyroY = Wire.read() << 8 | Wire.read(); // GYRO_YOUT_H und GYRO_YOUT_L
+            gyroZ = Wire.read() << 8 | Wire.read(); // GYRO_ZOUT_H und GYRO_ZOUT_L
+
+            // Daten ausgeben
+            Serial.print("AcX = "); Serial.print((accX));
+            Serial.print(" | AcY = "); Serial.print((accY));
+            Serial.print(" | AcZ = "); Serial.print((accZ));
+            Serial.print(" | tmp = "); Serial.print((tRaw + 12412.0) / 340.0); // Temperatur
+            Serial.print(" | GyX = "); Serial.print((gyroX));
+            Serial.print(" | GyY = "); Serial.print((gyroY));
+            Serial.print(" | GyZ = "); Serial.print((gyroZ));
+            Serial.println();
+        }
+    }
+
+
 
 // Funktion zur Distanzmessung in regelmässigen Abständen linke Seite
 void distanceLH() {
