@@ -385,38 +385,40 @@ void buzzerRH() {
 Buzzer von LH und RH funktionieren, jedoch blockieren sie sich gegenseitig, sodass jeweils nur LH oder RH einen Ton ausgibt.
 Das Problem liegt in der Verwendung von tone() und noTone() für die Steuerung der Buzzer. Beide Funktionen arbeiten mit demselben Timer. Wenn eine Seite den Timer verwendet, blockiert dies die Steuerung des anderen Buzzers, da beide auf denselben Timer zugreifen möchten.
 #### Lösung
-Die Arduino-Bibliothek NewTone ist speziell darauf ausgelegt, mehrere Töne gleichzeitig und unabhängig voneinander zu steuern, ohne dass die Hardware-Timer kollidieren.
+Um das gleichzeitige Abspielen von Tönen auf zwei Lautsprechern zu ermöglichen, können wir statt der tone()-Funktion die Digitalen Ausgänge direkt ansteuern. Dadurch lassen sich unabhängig voneinander unterschiedliche Dauer des Tones erzeugen, ohne dass die Buzzer sich gegenseitig blockieren. Jedoch lässt sich die Frequenz nicht einstellen.
 #### 2. Version des Codes
 ```
 #include <Arduino.h>
-#include <NewTone.h> // Bibliothek für die unabhängige Steuerung der Buzzer
 
 // Pins für die linke Seite
 #define trigPinLH 6   // Pin für den Trigger des Ultraschallsensors (links)
 #define echoPinLH 7   // Pin für das Echo des Ultraschallsensors (links)
-#define buzzerPinLH 10 // Pin für den Summer (links)
+#define buzzerPinLH 10 // Pin für den Buzzer (links)(analog)
 
 // Pins für die rechte Seite
 #define trigPinRH 8   // Pin für den Trigger des Ultraschallsensors (rechts)
 #define echoPinRH 9   // Pin für das Echo des Ultraschallsensors (rechts)
-#define buzzerPinRH 11 // Pin für den Summer (rechts)
+#define buzzerPinRH 11 // Pin für den Buzzer (rechts)(analog)
 
 // Globale Variablen für die linke Seite
-float distanzLH = 0;                     // Speichert die gemessene Distanz (links)
-unsigned long lastMeasurementTimeLH = 0; // Speichert die Zeit des letzten Messvorgangs (links)
+float distanzLH = 0;                      // Speichert die gemessene Distanz (links)
+unsigned long lastMeasurementTimeLH = 0;  // Speichert die Zeit des letzten Messvorgangs (links)
+unsigned long previousBuzzerTimeLH = 0; // Zeit der letzten Buzzer-Aktivierung (links)
 
 // Globale Variablen für die rechte Seite
-float distanzRH = 0;                     // Speichert die gemessene Distanz (rechts)
-unsigned long lastMeasurementTimeRH = 0; // Speichert die Zeit des letzten Messvorgangs (rechts)
+float distanzRH = 0;                      // Speichert die gemessene Distanz (rechts)
+unsigned long lastMeasurementTimeRH = 0;  // Speichert die Zeit des letzten Messvorgangs (rechts)
+unsigned long previousBuzzerTimeRH = 0; // Zeit der letzten Buzzer-Aktivierung (rechts)
 
 // Gemeinsame Konfiguration
-unsigned long measurementInterval = 500; // Zeitintervall zwischen den Messungen in Millisekunden
+unsigned long measurementIntervalLH = 500; // Mindestzeitabstände zwischen zwei Messungen für die linke Seite (in Millisekunden).
+unsigned long measurementIntervalRH = 500; // Mindestzeitabstände zwischen zwei Messungen für die rechte Seite (in Millisekunden).
 
 // Funktionsprototypen
 void distanceLH(); // Funktion zur Distanzmessung (links)
-void buzzerLH();   // Funktion zur Steuerung des Buzzers (links)
+void buzzerLH(unsigned long intervalLH); // Tonsteuerung für Buzzer (links)
 void distanceRH(); // Funktion zur Distanzmessung (rechts)
-void buzzerRH();   // Funktion zur Steuerung des Buzzers (rechts)
+void buzzerRH(unsigned long intervalRH); // Tonsteuerung für Buzzer (rechts)
 
 void setup() {
     Serial.begin(9600);                 // Serielle Kommunikation starten
@@ -435,23 +437,36 @@ void setup() {
 void loop() {
     // Linke Seite
     distanceLH();
-    buzzerLH();
+    if (distanzLH > 0 && distanzLH < 300) { // Nur innerhalb eines gültigen Bereichs 0-3m
+        unsigned long intervalLH = (0.11 * (distanzLH * distanzLH) + 50); // quadratische Funktion, so dass die Dauer(Intervall) des Ton mit abnehmender Distanz kürzer wird
+        //map() kann auch eingefügt werden. map(distanz, 1, 200, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
+        buzzerLH(intervalLH); // Aktiviert den Buzzer mit dem berechneten Intervall.
+    } else {
+        digitalWrite(buzzerPinLH, LOW); // Buzzer ausschalten, wenn Distanz ausserhalb des Bereichs
+    }
 
     // Rechte Seite
     distanceRH();
-    buzzerRH();
+    if (distanzRH > 0 && distanzRH < 300) { 
+        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
+        
+        buzzerRH(intervalRH); 
+    } else {
+        digitalWrite(buzzerPinRH, LOW); 
+    }
 }
 
 // Funktion zur Distanzmessung (links)
 void distanceLH() {
-    if (millis() - lastMeasurementTimeLH < measurementInterval) {
+    // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
+    if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
         return; // Noch nicht Zeit für die nächste Messung
     }
     lastMeasurementTimeLH = millis(); // Zeit der letzten Messung aktualisieren
 
     float zeit = 0;
 
-    // Ultraschallsensor (links) auslösen
+    // Ultraschallsensor (links) auslösen, sendet ein 10-µs-Signal über den trigPinLH
     digitalWrite(trigPinLH, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPinLH, HIGH);
@@ -459,14 +474,15 @@ void distanceLH() {
     digitalWrite(trigPinLH, LOW);
 
     // Dauer des Echos messen
-    zeit = pulseIn(echoPinLH, HIGH, 30000);
+    // Misst die Zeit, die das Echo benötigt, um den Sensor zu erreichen (mit Timeout von 17442 µs für 300 cm).
+    zeit = pulseIn(echoPinLH, HIGH, 17442); // 11630ms=200cm, 17442ms=300cm, 30000ms=500cm, (30.000μs/2*0.0344≈516cm)
     if (zeit == 0) {
         Serial.println("Kein Echo empfangen (links)");
-        distanzLH = -1;
+        distanzLH = -1; // Gibt -1 zurück, wenn kein Echo empfangen wurde.
         return;
     }
 
-    // Distanz berechnen
+    // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
     distanzLH = (zeit / 2) * 0.0344;
 
     Serial.print("Distanz LH = ");
@@ -474,27 +490,31 @@ void distanceLH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Buzzers (links)
-void buzzerLH() {
-    if (distanzLH < 0) {
-        noNewTone(buzzerPinLH); // Ton ausschalten, wenn keine Distanz gemessen wird
-        return;
-    }
+// Funktion zur Tonsteuerung (links)
+void buzzerLH(unsigned long intervalLH) { //intervalLH: Zeitdauer in Millisekunden, wie lange der Buzzer an- oder ausgeschaltet bleiben soll.
+    static bool buzzerStateLH = false; // Aktueller Zustand des Buzzers (links), Initialwert: false (Buzzer ist zu Beginn ausgeschaltet).
 
-    int frequencyLH = max(100, 1000 - (0.11 * (distanzLH * distanzLH))); // Frequenz berechnen (Mindestfrequenz 100 Hz)
-    NewTone(buzzerPinLH, frequencyLH); // Ton mit der berechneten Frequenz abspielen
+    //millis(): gibt die Zeit seit dem Start des Mikrocontrollers in Millisekunden zurück.
+    //aktuelle Zeit (millis()) - letzte Aktivierungszeit (previousBuzzerTimeLH) >= dem angegebenen Intervall (intervalLH)
+    //wenn ja, ist es Zeit, den Zustand des Buzzers zu wechseln (An oder Aus).
+    if (millis() - previousBuzzerTimeLH >= intervalLH) {
+        previousBuzzerTimeLH = millis(); // Zeit aktualisieren, speichert den Zeitpunkt der letzten Buzzer-Aktivierung.
+        buzzerStateLH = !buzzerStateLH; // Buzzer-Zustand wird invertiert
+        digitalWrite(buzzerPinLH, buzzerStateLH ? HIGH : LOW); //Ternäre Bedingung: buzzerStateLH == true: HIGH, buzzerStateLH == false: LOW
+    }
 }
 
 // Funktion zur Distanzmessung (rechts)
 void distanceRH() {
-    if (millis() - lastMeasurementTimeRH < measurementInterval) {
+    // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
+    if (millis() - lastMeasurementTimeRH < measurementIntervalRH) {
         return; // Noch nicht Zeit für die nächste Messung
     }
     lastMeasurementTimeRH = millis(); // Zeit der letzten Messung aktualisieren
 
     float zeit = 0;
 
-    // Ultraschallsensor (rechts) auslösen
+    // Ultraschallsensor (rechts) auslösen, sendet ein 10-µs-Signal über den trigPinLH
     digitalWrite(trigPinRH, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPinRH, HIGH);
@@ -502,14 +522,15 @@ void distanceRH() {
     digitalWrite(trigPinRH, LOW);
 
     // Dauer des Echos messen
-    zeit = pulseIn(echoPinRH, HIGH, 30000);
+    // Misst die Zeit, die das Echo benötigt, um den Sensor zu erreichen (mit Timeout von 17442 µs für 300 cm).
+    zeit = pulseIn(echoPinRH, HIGH, 17442); // 11630ms=200cm, 17442ms=300cm, 30000ms=500cm, (30.000μs/2*0.0344≈516cm)
     if (zeit == 0) {
         Serial.println("Kein Echo empfangen (rechts)");
-        distanzRH = -1;
+        distanzRH = -1;  // Gibt -1 zurück, wenn kein Echo empfangen wurde.
         return;
     }
 
-    // Distanz berechnen
+    // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
     distanzRH = (zeit / 2) * 0.0344;
 
     Serial.print("Distanz RH = ");
@@ -517,19 +538,210 @@ void distanceRH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Buzzers (rechts)
-void buzzerRH() {
-    if (distanzRH < 0) {
-        noNewTone(buzzerPinRH); // Ton ausschalten, wenn keine Distanz gemessen wird
+// Funktion zur Tonsteuerung (rechts)
+void buzzerRH(unsigned long intervalRH) { 
+    static bool buzzerStateRH = false; 
+
+    if (millis() - previousBuzzerTimeRH >= intervalRH) {
+        previousBuzzerTimeRH = millis(); 
+        buzzerStateRH = !buzzerStateRH; 
+        digitalWrite(buzzerPinRH, buzzerStateRH ? HIGH : LOW);
+    }
+}
+```
+#### Problem
+Die Frequenz, also Tonhöhe lässt sich nicht einstellen. Die Funktion ist jedoch gegeben, das Geräusch ist einfach nicht sehr angenehm. Gerne möchte ich ein C4 erzeugen, welches eine Frequenz von 261 Hz hat. 
+#### Lösung
+Da die tone()-Funktion nicht verwendet werden darf, muss man die HIGH- und LOW-Zustände des Buzzers genauer steuern, um eine Rechteckwelle mit der gewünschten Frequenz zu erhalten.
+Quelle: BLACKBOXAI
+Um den Buzzer in der Frequenz C4 (261,63 Hz) zu betreiben, können wir die Funktion analogWrite() verwenden, um ein PWM-Signal zu erzeugen. Da die Frequenz von analogWrite() auf den meisten Arduino-Boards (wie dem Uno) standardmäßig 490 Hz beträgt, können wir die PWM-Duty-Cycle anpassen, um den gewünschten Ton zu erzeugen.
+
+Somit habe ich nun in der Buzzer Funktion den digitalWrite() zu analogWrite() geändert. 
+
+Quelle BLACKBOXAI:
+Wenn buzzerStateRH true ist (Buzzer ein), wird 128 übergeben, was etwa 50% der maximalen PWM-Leistung entspricht (auf einem 8-Bit-PWM-System, wo 255 die maximale Leistung ist).
+
+So funktioniert die Anwendung mit jeweils eigenem Intervall und einer einstellbaren Frequenz.
+
+Bsp. Code
+```
+void buzzerRH(unsigned long intervalRH) {
+    static bool buzzerStateRH = false;
+
+    if (millis() - previousBuzzerTimeRH >= intervalRH) {
+        previousBuzzerTimeRH = millis();
+        buzzerStateRH = !buzzerStateRH;
+        analogWrite(buzzerPinRH, buzzerStateRH ? 128 : LOW);
+    }
+}
+```
+#### 3. Version des Codes (Final)
+```
+#include <Arduino.h>
+
+// Pins für die linke Seite
+#define trigPinLH 6   // Pin für den Trigger des Ultraschallsensors (links)
+#define echoPinLH 7   // Pin für das Echo des Ultraschallsensors (links)
+#define buzzerPinLH 10 // Pin für den Buzzer (links)(analog)
+
+// Pins für die rechte Seite
+#define trigPinRH 8   // Pin für den Trigger des Ultraschallsensors (rechts)
+#define echoPinRH 9   // Pin für das Echo des Ultraschallsensors (rechts)
+#define buzzerPinRH 11 // Pin für den Buzzer (rechts)(analog)
+
+// Globale Variablen für die linke Seite
+float distanzLH = 0;                      // Speichert die gemessene Distanz (links)
+unsigned long lastMeasurementTimeLH = 0;  // Speichert die Zeit des letzten Messvorgangs (links)
+unsigned long previousBuzzerTimeLH = 0; // Zeit der letzten Buzzer-Aktivierung (links)
+
+// Globale Variablen für die rechte Seite
+float distanzRH = 0;                      // Speichert die gemessene Distanz (rechts)
+unsigned long lastMeasurementTimeRH = 0;  // Speichert die Zeit des letzten Messvorgangs (rechts)
+unsigned long previousBuzzerTimeRH = 0; // Zeit der letzten Buzzer-Aktivierung (rechts)
+
+// Gemeinsame Konfiguration
+unsigned long measurementIntervalLH = 500; // Mindestzeitabstände zwischen zwei Messungen für die linke Seite (in Millisekunden).
+unsigned long measurementIntervalRH = 500; // Mindestzeitabstände zwischen zwei Messungen für die rechte Seite (in Millisekunden).
+
+// Funktionsprototypen
+void distanceLH(); // Funktion zur Distanzmessung (links)
+void buzzerLH(unsigned long intervalLH); // Tonsteuerung für Buzzer (links)
+void distanceRH(); // Funktion zur Distanzmessung (rechts)
+void buzzerRH(unsigned long intervalRH); // Tonsteuerung für Buzzer (rechts)
+
+void setup() {
+    Serial.begin(9600);                 // Serielle Kommunikation starten
+
+    // Pins für die linke Seite konfigurieren
+    pinMode(trigPinLH, OUTPUT);         // Trigger-Pin (links) als Ausgang definieren
+    pinMode(echoPinLH, INPUT);          // Echo-Pin (links) als Eingang definieren
+    pinMode(buzzerPinLH, OUTPUT);       // Buzzer-Pin (links) als Ausgang definieren
+
+    // Pins für die rechte Seite konfigurieren
+    pinMode(trigPinRH, OUTPUT);         // Trigger-Pin (rechts) als Ausgang definieren
+    pinMode(echoPinRH, INPUT);          // Echo-Pin (rechts) als Eingang definieren
+    pinMode(buzzerPinRH, OUTPUT);       // Buzzer-Pin (rechts) als Ausgang definieren
+}
+
+void loop() {
+    // Linke Seite
+    distanceLH();
+    if (distanzLH > 0 && distanzLH < 300) { // Nur innerhalb eines gültigen Bereichs 0-3m
+        unsigned long intervalLH = (0.11 * (distanzLH * distanzLH) + 50); // quadratische Funktion, so dass die Dauer(Intervall) des Ton mit abnehmender Distanz kürzer wird
+        //map() kann auch eingefügt werden. map(distanz, 1, 200, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
+        buzzerLH(intervalLH); // Aktiviert den Buzzer mit dem berechneten Intervall.
+    } else {
+        analogWrite(buzzerPinLH, LOW); // Buzzer ausschalten, wenn Distanz ausserhalb des Bereichs
+    }
+
+    // Rechte Seite
+    distanceRH();
+    if (distanzRH > 0 && distanzRH < 300) {
+        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
+
+        buzzerRH(intervalRH);
+    } else {
+        analogWrite(buzzerPinRH, LOW);
+    }
+}
+
+// Funktion zur Distanzmessung (links)
+void distanceLH() {
+    // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
+    if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
+        return; // Noch nicht Zeit für die nächste Messung
+    }
+    lastMeasurementTimeLH = millis(); // Zeit der letzten Messung aktualisieren
+
+    float zeit = 0;
+
+    // Ultraschallsensor (links) auslösen, sendet ein 10-µs-Signal über den trigPinLH
+    digitalWrite(trigPinLH, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinLH, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinLH, LOW);
+
+    // Dauer des Echos messen
+    // Misst die Zeit, die das Echo benötigt, um den Sensor zu erreichen (mit Timeout von 17442 µs für 300 cm).
+    zeit = pulseIn(echoPinLH, HIGH, 17442); // 11630ms=200cm, 17442ms=300cm, 30000ms=500cm, (30.000μs/2*0.0344≈516cm)
+    if (zeit == 0) {
+        Serial.println("Kein Echo empfangen (links)");
+        distanzLH = -1; // Gibt -1 zurück, wenn kein Echo empfangen wurde.
         return;
     }
 
-    int frequencyRH = max(100, 1000 - (0.11 * (distanzRH * distanzRH))); // Frequenz berechnen (Mindestfrequenz 100 Hz)
-    NewTone(buzzerPinRH, frequencyRH); // Ton mit der berechneten Frequenz abspielen
+    // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
+    distanzLH = (zeit / 2) * 0.0344;
+
+    Serial.print("Distanz LH = ");
+    Serial.print(distanzLH);
+    Serial.println(" cm");
+}
+
+// Funktion zur Tonsteuerung (links)
+void buzzerLH(unsigned long intervalLH) { //intervalLH: Zeitdauer in Millisekunden, wie lange der Buzzer an- oder ausgeschaltet bleiben soll.
+    static bool buzzerStateLH = false; // Aktueller Zustand des Buzzers (links), Initialwert: false (Buzzer ist zu Beginn ausgeschaltet).
+
+    //millis(): gibt die Zeit seit dem Start des Mikrocontrollers in Millisekunden zurück.
+    //aktuelle Zeit (millis()) - letzte Aktivierungszeit (previousBuzzerTimeLH) >= dem angegebenen Intervall (intervalLH)
+    //wenn ja, ist es Zeit, den Zustand des Buzzers zu wechseln (An oder Aus).
+    if (millis() - previousBuzzerTimeLH >= intervalLH) {
+        previousBuzzerTimeLH = millis(); // Zeit aktualisieren, speichert den Zeitpunkt der letzten Buzzer-Aktivierung.
+        buzzerStateLH = !buzzerStateLH; // Buzzer-Zustand wird invertiert
+        analogWrite(buzzerPinLH, buzzerStateLH ? 128 : LOW); //Ternäre Bedingung: buzzerStateLH == true: 128 (50% von Frequenz 255, was einem C4 Ton entspricht), buzzerStateLH == false: LOW
+    }
+}
+
+// Funktion zur Distanzmessung (rechts)
+void distanceRH() {
+    // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
+    if (millis() - lastMeasurementTimeRH < measurementIntervalRH) {
+        return; // Noch nicht Zeit für die nächste Messung
+    }
+    lastMeasurementTimeRH = millis(); // Zeit der letzten Messung aktualisieren
+
+    float zeit = 0;
+
+    // Ultraschallsensor (rechts) auslösen, sendet ein 10-µs-Signal über den trigPinLH
+    digitalWrite(trigPinRH, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinRH, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinRH, LOW);
+
+    // Dauer des Echos messen
+    // Misst die Zeit, die das Echo benötigt, um den Sensor zu erreichen (mit Timeout von 17442 µs für 300 cm).
+    zeit = pulseIn(echoPinRH, HIGH, 17442); // 11630ms=200cm, 17442ms=300cm, 30000ms=500cm, (30.000μs/2*0.0344≈516cm)
+    if (zeit == 0) {
+        Serial.println("Kein Echo empfangen (rechts)");
+        distanzRH = -1;  // Gibt -1 zurück, wenn kein Echo empfangen wurde.
+        return;
+    }
+
+    // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
+    distanzRH = (zeit / 2) * 0.0344;
+
+    Serial.print("Distanz RH = ");
+    Serial.print(distanzRH);
+    Serial.println(" cm");
+}
+
+// Funktion zur Tonsteuerung (rechts)
+void buzzerRH(unsigned long intervalRH) {
+    static bool buzzerStateRH = false;
+
+    if (millis() - previousBuzzerTimeRH >= intervalRH) {
+        previousBuzzerTimeRH = millis();
+        buzzerStateRH = !buzzerStateRH;
+        analogWrite(buzzerPinRH, buzzerStateRH ? 128 : LOW);
+    }
 }
 ```
 
-
+```
+Code
+```
 - Was sind die Testscenarios?
 - Beschreibung oder Bild das Testziel aufzeigt
 - Gibt es spezielle Gründe warum diese Tests gewählt wurden?
