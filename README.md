@@ -44,13 +44,13 @@ Funktionen:
 ### 6.1 Erstellung der Programmstruktur
 #### 6.1.1 Funktionen definiert:
    - **umschalten()** : Funktion zum manuellen Umschalten von Beschleunigungsmesser auf Parkhilfe
-   - **Parhilfe()** : jeweils LH/RH, Funktion zur Parkhilfe
+   - **Parkhilfe()** : jeweils LH/RH, Funktion zur Parkhilfe
      - **dinstance()** : jeweils LH/RH, Funktion zur Distanzmessung in regelmässigen Abständen
      - **buzzer()** : jeweils LH/RH, Funktion zur Steuerung des Buzzers basierend auf der Distanz
    - **Beschleunigung()** : Funktion zur G-Kräfte Messung
 #### 6.1.2 Zuweisung Pin auf Arduino Board
 #### 6.1.3 void setup() erstellt
-### 6.2. Erestellung einzelner Funktionen
+### 6.2. Beschreibung einzelner Funktionen
 #### 6.2.1 void loop()
    - umschalten wird aufgerufen:
      - Überwacht den Taster und wechselt den Zustand von schalter (true/false), wenn der Taster gedrückt wird.
@@ -86,9 +86,6 @@ Diese Funktion ruft die Funktionen distance() und buzzer() auf:
    Durch diese Logik wird ein akustisches Feedback erzeugt, das die Distanz zur gemessenen Oberfläche repräsentiert.
    
    - Die Funktion passt das Intervall für den Buzzer-Ton an, basierend auf der gemessenen Distanz:
-     - Grosse Distanz → Langsame Signale (1000 ms).
-     - Mittlere Distanz → Mittelschnelle Signale (500 ms).
-     - Kleine Distanz → Schnelle Signale (200 ms).
    - Wenn keine gültige Distanz gemessen wird (z. B. kein Echo), wird der Buzzer ausgeschaltet.
 #### 6.2.4 Beschleunigung()
 
@@ -98,12 +95,21 @@ Diese Funktion ruft die Funktionen distance() und buzzer() auf:
 - Nein, warum konnten nicht alle umgesetzt werden?
 - War etwas unerwartet beim Schreiben des Programcodes?
 ## 7. Tests
+Vorgehen: 
+7.1 Testen einzelner Funktionen in einem anderen Branch.
+7.2 erfolgreich gestestete Funktion in Main Branch einfliessen lassen und Main Branch testen
 ### 7.1 Vorgehen: 
 1. Testen einzelner Funktionen in einem anderen Branch.
 2. erfolgreich gestestete Funktion in Main Branch einfliessen lassen
 3. Main Branch testen
-### 7.1.2 Test Funktion Parkhilfe() in Branch ultrasonic, nur LH
-#### Version des Codes
+### 7.1 Test Funktion Parkhilfe() in Branch ultrasonic
+Beanspruchte Hilfsquellen: 
+- https://docs.arduino.cc/language-reference/
+- https://www.circuitbasics.com/how-to-set-up-an-ultrasonic-range-finder-on-an-arduino/
+- https://how2electronics.com/jsn-sr04t-waterproof-ultrasonic-sensor-with-arduino-guide/
+- https://www.circuitbasics.com/how-to-use-active-and-passive-buzzers-on-the-arduino/
+#### 7.1.1 Test nur Linke Seite
+#### 7.1.1.1 Version 1.0 des Codes
 ```
 // Funktion zur Parkhilfe rechte Seite
 void ParkhilfeRH () {
@@ -144,18 +150,18 @@ void ParkhilfeRH () {
     delay(500);
 }
 ```
-#### Problemstellung
+#### 7.1.1.2 Problemstellung
 Zuerst wurde die Distanzmessung sowie der Buzzer in derselben Funktion programmiert.
 Jedoch ergab sich das Problem, dass nach jeder Verzögerung (delay) der Ton auch pausiert wird. 
 Die Überschneidung der Speildauer des Tons und der Verzögerung am Ende der Funktion erzeugt einen abgehacktn Ton und er wird nicht kontinuierlich gespielt, währenddem die Messung durchgeführt wird.
-#### Lösung
+#### 7.1.1.3 Lösung
 1. Die Funktion Parkhilfe wird in zwei Unterfunktionen aufgeteilt.
    - dinstance(): Funktion zur Distanzmessung in regelmässigen Abständen
    - buzzer(): Funktion zur Steuerung des Buzzers basierend auf der Distanz
 3. Verwendet millis() für das Timing anstelle von delay(). Dadurch wird sichergestellt, dass die Buzzer-Steuerung den Rest des Programms nicht blockiert. Durch den Verzicht auf delay()
    kann das Programm die Abstandsmessung und die Ausführung anderer Aufgaben fortsetzen, ohne blockiert zu werden.
    
-#### 2. Version des Codes
+#### 7.1.1.3 Version 2 des Codes
 ```
 // Funktion zur Distanzmessung in regelmässigen Abständen
 void distanceLH() {
@@ -211,16 +217,17 @@ void buzzerLH() {
     tone(buzzerPinLH, 523, interval); // Frequenz: 523 Hz (C4), Dauer: interval
 }
 ```
-#### Problem
+#### 7.1.1.4 Problem
 Code funktioniert nicht, der Buzzer gibt einen kontinuierlichen Ton aus.
 Die Methode tone() erzeugt den Ton, aber die Dauer (interval) ist nur die Zeit, für die der Ton gespielt wird, nicht die Pause zwischen den Tönen. Es gibt keinen Mechanismus, um den Ton zu stoppen oder eine Pause einzufügen, bevor die nächste Distanzmessung erfolgt.
-#### Lösung
+#### 7.1.1.4 Lösung
 Um das gewünschte Verhalten zu erzielen (abwechselndes Ein- und Ausschalten des Buzzers basierend auf der Distanz), muss ein Mechanismus eingeführt werden, der den Ton nach einer bestimmten Zeit ausschaltet und dann eine Pause macht.
 Mit einer buzzerOn-Logik wird der Zustand des Buzzers (ein/aus) durch die Variable buzzerOn gesteuert.
 Bei jeder Änderung wird der Zustand umgeschaltet.
 Jetzt funktioniert die Distanzmessung, sowie die Buzzer ausgabe zumindest für jeweils eine Seite.
-### 7.1.3 Test Funktion Parkhilfe() in Branch ultrasonic, LH und RH zusammen
-#### 1. Version des Codes
+
+### 7.1.2 Test Funktion Parkhilfe() in Branch ultrasonic, LH und RH zusammen
+#### 7.1.2.1 Version 1.0 des Codes
 ```
 // Globale Variablen für die linke Seite
 float distanzLH = 0;                      // Speichert die gemessene Distanz (links)
@@ -381,12 +388,12 @@ void buzzerRH() {
     }
 }
 ```
-#### Problem
+#### 7.1.2.2 Problem
 Buzzer von LH und RH funktionieren, jedoch blockieren sie sich gegenseitig, sodass jeweils nur LH oder RH einen Ton ausgibt.
 Das Problem liegt in der Verwendung von tone() und noTone() für die Steuerung der Buzzer. Beide Funktionen arbeiten mit demselben Timer. Wenn eine Seite den Timer verwendet, blockiert dies die Steuerung des anderen Buzzers, da beide auf denselben Timer zugreifen möchten.
-#### Lösung
+#### 7.1.2.3 Lösung
 Um das gleichzeitige Abspielen von Tönen auf zwei Lautsprechern zu ermöglichen, können wir statt der tone()-Funktion die Digitalen Ausgänge direkt ansteuern. Dadurch lassen sich unabhängig voneinander unterschiedliche Dauer des Tones erzeugen, ohne dass die Buzzer sich gegenseitig blockieren. Jedoch lässt sich die Frequenz nicht einstellen.
-#### 2. Version des Codes
+#### 7.1.2.4 Version 2.0 des Codes
 ```
 #include <Arduino.h>
 
@@ -549,9 +556,9 @@ void buzzerRH(unsigned long intervalRH) {
     }
 }
 ```
-#### Problem
+#### 7.1.2.5 Problem
 Die Frequenz, also Tonhöhe lässt sich nicht einstellen. Die Funktion ist jedoch gegeben, das Geräusch ist einfach nicht sehr angenehm. Gerne möchte ich ein C4 erzeugen, welches eine Frequenz von 261 Hz hat. 
-#### Lösung
+#### 7.1.2.6 Lösung
 Da die tone()-Funktion nicht verwendet werden darf, muss man die HIGH- und LOW-Zustände des Buzzers genauer steuern, um eine Rechteckwelle mit der gewünschten Frequenz zu erhalten.
 Quelle: BLACKBOXAI
 Um den Buzzer in der Frequenz C4 (261,63 Hz) zu betreiben, können wir die Funktion analogWrite() verwenden, um ein PWM-Signal zu erzeugen. Da die Frequenz von analogWrite() auf den meisten Arduino-Boards (wie dem Uno) standardmäßig 490 Hz beträgt, können wir die PWM-Duty-Cycle anpassen, um den gewünschten Ton zu erzeugen.
@@ -575,7 +582,7 @@ void buzzerRH(unsigned long intervalRH) {
     }
 }
 ```
-#### 3. Version des Codes (Final)
+#### 7.1.2.7 Version 3 des Codes (Final)
 ```
 #include <Arduino.h>
 
@@ -738,10 +745,383 @@ void buzzerRH(unsigned long intervalRH) {
     }
 }
 ```
+### 7.1 Test Funktion Beschleunigung im Branch MPU6050
+Für die Muss Funktion benötigen wir nur die Temperatur Ausgabe.
+Mit folgendem Code bekommen wir die Rohdaten aus dem Sensor.
+Auf dem Serieal Monitor wird sie ausgegeben.
+Da dieser Sensor sehr komplex ist und es fast keine gute Bibliothek gibt, habe ich den Code übernommen.
+Quelle: https://wolles-elektronikkiste.de/mpu6050-beschleunigungssensor-und-gyroskop
+```
+#include <Arduino.h>
+#include "Wire.h"
+
+#define MPU6050_ADDR 0x68 // Alternativ AD0 auf HIGH setzen --> Adresse = 0x69
+
+int16_t accX, accY, accZ, gyroX, gyroY, gyroZ, tRaw; // Rohdaten für Beschleunigung, Gyroskop und Temperatur
+char result[7]; // Temporärer String für die Umwandlung in Text
+
+void setup() {
+  Serial.begin(9600); // Serielle Kommunikation starten
+  Wire.begin(); // I²C-Kommunikation initialisieren
+
+  // MPU6050 aufwecken
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x6B); // PWR_MGMT_1-Register
+  Wire.write(0);    // Wake-up-Befehl
+  Wire.endTransmission(true);
+}
+
+void loop() {
+  // Register von 0x3B (ACCEL_XOUT_H) anfordern
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x3B); // Startadresse der Register
+  Wire.endTransmission(false); // Verbindung bleibt aktiv
+  Wire.requestFrom(MPU6050_ADDR, 14, true); // 14 Register (7 x 2 Bytes) anfordern
+
+  // Rohdaten lesen und zusammenfügen
+  accX = Wire.read() << 8 | Wire.read(); // ACCEL_XOUT_H und ACCEL_XOUT_L
+  accY = Wire.read() << 8 | Wire.read(); // ACCEL_YOUT_H und ACCEL_YOUT_L
+  accZ = Wire.read() << 8 | Wire.read(); // ACCEL_ZOUT_H und ACCEL_ZOUT_L
+  tRaw = Wire.read() << 8 | Wire.read(); // TEMP_OUT_H und TEMP_OUT_L
+  gyroX = Wire.read() << 8 | Wire.read(); // GYRO_XOUT_H und GYRO_XOUT_L
+  gyroY = Wire.read() << 8 | Wire.read(); // GYRO_YOUT_H und GYRO_YOUT_L
+  gyroZ = Wire.read() << 8 | Wire.read(); // GYRO_ZOUT_H und GYRO_ZOUT_L
+
+  // Daten ausgeben
+  Serial.print("AcX = "); Serial.print((accX));
+  Serial.print(" | AcY = "); Serial.print((accY));
+  Serial.print(" | AcZ = "); Serial.print((accZ));
+  Serial.print(" | tmp = "); Serial.print((tRaw + 12412.0) / 340.0); // Temperatur
+  Serial.print(" | GyX = "); Serial.print((gyroX));
+  Serial.print(" | GyY = "); Serial.print((gyroY));
+  Serial.print(" | GyZ = "); Serial.print((gyroZ));
+  Serial.println();
+
+  delay(1000); // 1 Sekunde Pause
+}
+
+// Funktion zur Umwandlung von int16-Werten in formatierte Strings
+char* toStr(int16_t character) {
+  sprintf(result, "%6d", character);
+  return result;
+}
+```
+Problem
+Die delay() Funktion hat das Umschalten verunmöglicht, da der main loo() blockiert wurde, konnte die Betätigung des Druckschalters nicht erfasst werden.
+
+Lösung
+Ersetzung von delay(1000) durch millis().
+
+Korrigierter Code von ChatGPT:
 
 ```
-Code
+// Globale Variablen für Timing
+unsigned long lastAccelTime = 0;
+const unsigned long accelInterval = 1000; // Intervall für Beschleunigungsmessung (1 Sekunde)
+
+// Beschleunigungsmessung
+void Beschleunigung() {
+    if (millis() - lastAccelTime >= accelInterval) {
+        lastAccelTime = millis(); // Aktualisiere die Zeit der letzten Messung
+
+        // Register von 0x3B (ACCEL_XOUT_H) anfordern
+        Wire.beginTransmission(MPU6050_ADDR);
+        Wire.write(0x3B); // Startadresse der Register
+        Wire.endTransmission(false); // Verbindung bleibt aktiv
+        Wire.requestFrom(MPU6050_ADDR, 14, true); // 14 Register (7 x 2 Bytes) anfordern
+
+        // Rohdaten lesen und zusammenfügen
+        accX = Wire.read() << 8 | Wire.read(); // ACCEL_XOUT_H und ACCEL_XOUT_L
+        accY = Wire.read() << 8 | Wire.read(); // ACCEL_YOUT_H und ACCEL_YOUT_L
+        accZ = Wire.read() << 8 | Wire.read(); // ACCEL_ZOUT_H und ACCEL_ZOUT_L
+        tRaw = Wire.read() << 8 | Wire.read(); // TEMP_OUT_H und TEMP_OUT_L
+        gyroX = Wire.read() << 8 | Wire.read(); // GYRO_XOUT_H und GYRO_XOUT_L
+        gyroY = Wire.read() << 8 | Wire.read(); // GYRO_YOUT_H und GYRO_YOUT_L
+        gyroZ = Wire.read() << 8 | Wire.read(); // GYRO_ZOUT_H und GYRO_ZOUT_L
+
+        // Daten ausgeben
+        Serial.print("AcX = "); Serial.print((accX));
+        Serial.print(" | AcY = "); Serial.print((accY));
+        Serial.print(" | AcZ = "); Serial.print((accZ));
+        Serial.print(" | tmp = "); Serial.print((tRaw + 12412.0) / 340.0); // Temperatur
+        Serial.print(" | GyX = "); Serial.print((gyroX));
+        Serial.print(" | GyY = "); Serial.print((gyroY));
+        Serial.print(" | GyZ = "); Serial.print((gyroZ));
+        Serial.println();
+    }
+}
 ```
+
+### 7.2 Test Main Branch
+#### 7.2.1  Funktion umschalten() 
+Das Umschalten von einer auf die andere Funktion wird mit einer einfachen Toggle-Logik gemacht. Mit einer LED wurde gestestet, ob der Drucktaster ein Signal zurückgibt. Das Umschalten it einfach zu testen, entweder die Distanzsensoren sind aktiv oder der Beschleunigungssensor. Dies wurde erfolgreich umgesetzt.
+#### 7.2.1 Parkhilfe()
+Die Sub-Funktionen dinstance() und buzzer() wurden im ultrasonic Branch erfolgreich gestestet.
+Im Main Branch funktionieren sie wie gewünscht.
+Testszenario:
+Mit der Hand als Hinderniss, werden jeweils beim linken und rechten Abtsandsensor verschiedene Distanzen simuliert.
+Testziel:
+Die Buzzers geben im Verhältnis zur Distanz eine andere Dauer des Tons aus. Auf dem Serial Monitor sind jeweils die Distanzen zur Kontrolle abzulesen.
+ #### 7.2.1 Beschleunigung()
+
+ 7.2.3 Test mit allen Funktionen zusammen.
+
+```
+#include <Arduino.h>
+#include <Wire.h>
+
+// Zuweisung Pin auf Arduino Board
+#define tasterPin 2
+
+#define MPU6050_ADDR 0x68 // Alternativ AD0 auf HIGH setzen --> Adresse = 0x69
+
+#define trigPinLH 6 // Pin für den Trigger des Ultraschallsensors (links)
+#define echoPinLH 7 // Pin für das Echo des Ultraschallsensors (links)
+#define trigPinRH 8 // Pin für den Trigger des Ultraschallsensors (rechts)
+#define echoPinRH 9 // Pin für das Echo des Ultraschallsensors (rechts)
+#define buzzerPinLH 10 // Pin für den Buzzer (links)(analog)
+#define buzzerPinRH 11 // Pin für den Buzzer (rechts)(analog)
+
+// Globale Variablen
+int push = 0;       // aktueller Zustand des Tasters
+int lastpush = 0;   // letzter Zustand des Tasters
+bool schalter = false;  // aktueller Zustand des Ausgangs (umschaltbar)
+
+// Globale Variablen für die linke Seite
+float distanzLH = 0;                      // Speichert die gemessene Distanz (links)
+unsigned long lastMeasurementTimeLH = 0;  // Speichert die Zeit des letzten Messvorgangs (links)
+unsigned long previousBuzzerTimeLH = 0; // Zeit der letzten Buzzer-Aktivierung (links)
+
+// Globale Variablen für die rechte Seite
+float distanzRH = 0;                      // Speichert die gemessene Distanz (rechts)
+unsigned long lastMeasurementTimeRH = 0;  // Speichert die Zeit des letzten Messvorgangs (rechts)
+unsigned long previousBuzzerTimeRH = 0; // Zeit der letzten Buzzer-Aktivierung (rechts)
+
+// Gemeinsame Konfiguration
+unsigned long measurementIntervalLH = 500; // Mindestzeitabstände zwischen zwei Messungen für die linke Seite (in Millisekunden).
+unsigned long measurementIntervalRH = 500; // Mindestzeitabstände zwischen zwei Messungen für die rechte Seite (in Millisekunden).
+
+// Globale Variablen Beschleunigung
+int16_t accX, accY, accZ, gyroX, gyroY, gyroZ, tRaw; // Rohdaten für Beschleunigung, Gyroskop und Temperatur
+char result[7]; // Temporärer String für die Umwandlung in Text
+unsigned long lastAccelTime = 0;
+const unsigned long accelInterval = 1000; // Intervall für Beschleunigungsmessung (1 Sekunde)
+
+// Main-Funktionsprototypen
+void umschalten();
+void ParkhilfeLH();
+void ParkhilfeRH();
+void Beschleunigung();
+
+//Sub-Funktionsprototypen
+void distanceLH(); // Funktion zur Distanzmessung (links)
+void buzzerLH(unsigned long intervalLH); // Tonsteuerung für Buzzer (links)
+void distanceRH(); // Funktion zur Distanzmessung (rechts)
+void buzzerRH(unsigned long intervalRH); // Tonsteuerung für Buzzer (rechts)
+
+void setup() {
+    Serial.begin(9600);
+    Wire.begin(); // I²C-Kommunikation initialisieren
+
+    // MPU6050 aufwecken
+    Wire.beginTransmission(MPU6050_ADDR);
+    Wire.write(0x6B); // PWR_MGMT_1-Register
+    Wire.write(0);    // Wake-up-Befehl
+    Wire.endTransmission(true);
+
+    pinMode(tasterPin, INPUT);          // Eingang  2, Taster
+
+    pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
+    pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
+    pinMode(trigPinRH, OUTPUT);     // Ausgang 8, TriggerRH
+    pinMode(echoPinRH, INPUT);      // Eingang 9, EchoRH
+    pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
+    pinMode(buzzerPinRH, OUTPUT);   // Ausgang 11, Buzzer RH
+}
+
+void loop() {
+   umschalten();
+        if (schalter) {
+            ParkhilfeLH();
+            ParkhilfeRH();
+        } else {
+            Beschleunigung();
+            analogWrite(buzzerPinLH, LOW);
+            analogWrite(buzzerPinRH, LOW);
+        }
+}
+
+// Funktion zum manuellen Umschalten von Beschleunigungsmesser auf Parkhilfe
+void umschalten () {
+    // Umschalttaste auslesen
+    push = digitalRead(tasterPin);
+
+    // Prüfen, ob der Taster gedrückt wurde (Zustandsänderung von LOW nach HIGH)
+    if (push == HIGH && lastpush == LOW) {
+        schalter = !schalter;   // Taster-Zustand umkehren
+    }
+    // Verzögerung für Entprellung
+    delay(50);
+
+    // Aktuellen Zustand Tasters speichern
+    lastpush = push;
+}
+
+// Funktion zur Parkhilfe linke Seite
+void ParkhilfeLH () {
+    // Funktion zur Distanzmessung aufrufen
+    distanceLH();
+    if (distanzLH > 0 && distanzLH < 300) { // Nur innerhalb eines gültigen Bereichs 0-3m
+        unsigned long intervalLH = (0.11 * (distanzLH * distanzLH) + 50); // quadratische Funktion, so dass die Dauer(Intervall) des Ton mit abnehmender Distanz kürzer wird
+        //map() kann auch eingefügt werden. map(distanz, 1, 200, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
+        buzzerLH(intervalLH); // Aktiviert den Buzzer mit dem berechneten Intervall.
+    } else {
+        analogWrite(buzzerPinLH, LOW); // Buzzer ausschalten, wenn Distanz ausserhalb des Bereichs
+    }
+    // Funktion zur kontinuierlichen Steuerung des Buzzer aufrufen
+}
+
+// Funktion zur Parkhilfe rechte Seite
+void ParkhilfeRH () {
+    // Funktion zur Distanzmessung aufrufen
+    distanceRH();
+    if (distanzRH > 0 && distanzRH < 300) {
+        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
+
+        buzzerRH(intervalRH);
+    } else {
+        analogWrite(buzzerPinRH, LOW);
+    }
+}
+
+void Beschleunigung () {
+        if (millis() - lastAccelTime >= accelInterval) {
+            lastAccelTime = millis(); // Aktualisiere die Zeit der letzten Messung
+
+            // Register von 0x3B (ACCEL_XOUT_H) anfordern
+            Wire.beginTransmission(MPU6050_ADDR);
+            Wire.write(0x3B); // Startadresse der Register
+            Wire.endTransmission(false); // Verbindung bleibt aktiv
+            Wire.requestFrom(MPU6050_ADDR, 14, true); // 14 Register (7 x 2 Bytes) anfordern
+
+            // Rohdaten lesen und zusammenfügen
+            accX = Wire.read() << 8 | Wire.read(); // ACCEL_XOUT_H und ACCEL_XOUT_L
+            accY = Wire.read() << 8 | Wire.read(); // ACCEL_YOUT_H und ACCEL_YOUT_L
+            accZ = Wire.read() << 8 | Wire.read(); // ACCEL_ZOUT_H und ACCEL_ZOUT_L
+            tRaw = Wire.read() << 8 | Wire.read(); // TEMP_OUT_H und TEMP_OUT_L
+            gyroX = Wire.read() << 8 | Wire.read(); // GYRO_XOUT_H und GYRO_XOUT_L
+            gyroY = Wire.read() << 8 | Wire.read(); // GYRO_YOUT_H und GYRO_YOUT_L
+            gyroZ = Wire.read() << 8 | Wire.read(); // GYRO_ZOUT_H und GYRO_ZOUT_L
+
+            // Daten ausgeben
+            Serial.print("AcX = "); Serial.print((accX));
+            Serial.print(" | AcY = "); Serial.print((accY));
+            Serial.print(" | AcZ = "); Serial.print((accZ));
+            Serial.print(" | tmp = "); Serial.print((tRaw + 12412.0) / 340.0); // Temperatur
+            Serial.print(" | GyX = "); Serial.print((gyroX));
+            Serial.print(" | GyY = "); Serial.print((gyroY));
+            Serial.print(" | GyZ = "); Serial.print((gyroZ));
+            Serial.println();
+        }
+    }
+
+
+
+// Funktion zur Distanzmessung in regelmässigen Abständen linke Seite
+void distanceLH() {
+    // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
+    if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
+        return; // Noch nicht Zeit für die nächste Messung
+    }
+    lastMeasurementTimeLH = millis(); // Zeit der letzten Messung aktualisieren
+
+    float zeit = 0;
+
+    // Ultraschallsensor (links) auslösen, sendet ein 10-µs-Signal über den trigPinLH
+    digitalWrite(trigPinLH, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinLH, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinLH, LOW);
+
+    // Dauer des Echos messen
+    // Misst die Zeit, die das Echo benötigt, um den Sensor zu erreichen (mit Timeout von 17442 µs für 300 cm).
+    zeit = pulseIn(echoPinLH, HIGH, 17442); // 11630ms=200cm, 17442ms=300cm, 30000ms=500cm, (30.000μs/2*0.0344≈516cm)
+    if (zeit == 0) {
+        Serial.println("Kein Echo empfangen (links)");
+        distanzLH = -1; // Gibt -1 zurück, wenn kein Echo empfangen wurde.
+        return;
+    }
+
+    // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
+    distanzLH = (zeit / 2) * 0.0344;
+
+    Serial.print("Distanz LH = ");
+    Serial.print(distanzLH);
+    Serial.println(" cm");
+}
+
+// Funktion zur Steuerung des Buzzers basierend auf der Distanz linke Seite
+void buzzerLH(unsigned long intervalLH) { //intervalLH: Zeitdauer in Millisekunden, wie lange der Buzzer an- oder ausgeschaltet bleiben soll.
+    static bool buzzerStateLH = false; // Aktueller Zustand des Buzzers (links), Initialwert: false (Buzzer ist zu Beginn ausgeschaltet).
+
+    //millis(): gibt die Zeit seit dem Start des Mikrocontrollers in Millisekunden zurück.
+    //aktuelle Zeit (millis()) - letzte Aktivierungszeit (previousBuzzerTimeLH) >= dem angegebenen Intervall (intervalLH)
+    //wenn ja, ist es Zeit, den Zustand des Buzzers zu wechseln (An oder Aus).
+    if (millis() - previousBuzzerTimeLH >= intervalLH) {
+        previousBuzzerTimeLH = millis(); // Zeit aktualisieren, speichert den Zeitpunkt der letzten Buzzer-Aktivierung.
+        buzzerStateLH = !buzzerStateLH; // Buzzer-Zustand wird invertiert
+        analogWrite(buzzerPinLH, buzzerStateLH ? 128 : LOW); //Ternäre Bedingung: buzzerStateLH == true: 128 (50% von Frequenz 255, was einem C4 Ton entspricht), buzzerStateLH == false: LOW
+    }
+}
+
+// Funktion zur Distanzmessung in regelmässigen Abständen rechte Seite
+void distanceRH() {
+    // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
+    if (millis() - lastMeasurementTimeRH < measurementIntervalRH) {
+        return; // Noch nicht Zeit für die nächste Messung
+    }
+    lastMeasurementTimeRH = millis(); // Zeit der letzten Messung aktualisieren
+
+    float zeit = 0;
+
+    // Ultraschallsensor (rechts) auslösen, sendet ein 10-µs-Signal über den trigPinLH
+    digitalWrite(trigPinRH, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPinRH, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPinRH, LOW);
+
+    // Dauer des Echos messen
+    // Misst die Zeit, die das Echo benötigt, um den Sensor zu erreichen (mit Timeout von 17442 µs für 300 cm).
+    zeit = pulseIn(echoPinRH, HIGH, 17442); // 11630ms=200cm, 17442ms=300cm, 30000ms=500cm, (30.000μs/2*0.0344≈516cm)
+    if (zeit == 0) {
+        Serial.println("Kein Echo empfangen (rechts)");
+        distanzRH = -1;  // Gibt -1 zurück, wenn kein Echo empfangen wurde.
+        return;
+    }
+
+    // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
+    distanzRH = (zeit / 2) * 0.0344;
+
+    Serial.print("Distanz RH = ");
+    Serial.print(distanzRH);
+    Serial.println(" cm");
+}
+
+// Funktion zur Steuerung des Buzzers basierend auf der Distanz rechte Seite
+void buzzerRH(unsigned long intervalRH) {
+    static bool buzzerStateRH = false;
+
+    if (millis() - previousBuzzerTimeRH >= intervalRH) {
+        previousBuzzerTimeRH = millis();
+        buzzerStateRH = !buzzerStateRH;
+        analogWrite(buzzerPinRH, buzzerStateRH ? 128 : LOW);
+    }
+}
+
+``` 
+
 - Was sind die Testscenarios?
 - Beschreibung oder Bild das Testziel aufzeigt
 - Gibt es spezielle Gründe warum diese Tests gewählt wurden?
