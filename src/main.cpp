@@ -125,3 +125,4 @@ void writeRegister(uint16_t reg, byte value) {
   Wire.write(value);
   Wire.endTransmission(true);
 }
+
