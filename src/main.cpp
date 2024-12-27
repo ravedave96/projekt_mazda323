@@ -1,11 +1,26 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+//OLED-Display Settings
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+// The pins for I2C are defined by the Wire-library.
+// On an arduino UNO:       A4(SDA), A5(SCL)
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Zuweisung Pin auf Arduino Board
 #define tasterPin 2
 
 #define MPU6050_ADDR 0x68 // Alternativ AD0 auf HIGH setzen --> Adresse = 0x69
 
+// MPU-6050 SCL Anschluss auf Pin A5
+// MPU-6050 SDA Anschluss auf Pin A4
 #define trigPinLH 6 // Pin für den Trigger des Ultraschallsensors (links)
 #define echoPinLH 7 // Pin für das Echo des Ultraschallsensors (links)
 #define trigPinRH 8 // Pin für den Trigger des Ultraschallsensors (rechts)
@@ -68,6 +83,18 @@ void setup() {
     pinMode(echoPinRH, INPUT);      // Eingang 9, EchoRH
     pinMode(buzzerPinLH, OUTPUT);   // Ausgang 10, Buzzer LH
     pinMode(buzzerPinRH, OUTPUT);   // Ausgang 11, Buzzer RH
+
+    // OLED Display, SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        Serial.println(F("SSD1306 allocation failed"));
+        for(;;); // Don't proceed, loop forever
+    }
+    // Show initial display buffer contents on the screen --
+    // the library initializes this with an Adafruit splash screen.
+    display.display();
+    delay(200);
+    display.clearDisplay();
+
 }
 
 void loop() {
@@ -153,6 +180,17 @@ void Beschleunigung () {
             Serial.print(" | GyY = "); Serial.print((gyroY));
             Serial.print(" | GyZ = "); Serial.print((gyroZ));
             Serial.println();
+
+            //variable für Temperatur
+            float temperature = (tRaw + 12412.0) / 340.0;
+
+            // Daten ausgeben auf OLED-Display
+            display.clearDisplay();
+            display.setTextSize(1); // Draw 2X-scale text
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(10, 10);
+            display.print("tmp = %f °C", temperature);// Temperatur auf OLED-Display
+            display.display();      // Show initial text
         }
     }
 
@@ -251,6 +289,16 @@ void buzzerRH(unsigned long intervalRH) {
     }
 }
 
+void OLEDdisplay() {
+    display.clearDisplay();
+
+    display.setTextSize(2); // Draw 2X-scale text
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(10, 10);
+    display.println(F("scroll"));
+    display.display();      // Show initial text
+    delay(100);
+}
 
 
 
