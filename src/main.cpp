@@ -4,7 +4,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-//OLED-Display Settings
+//OLED-Display Settings, Quelle: Adafruit Bibliothek https://registry.platformio.org/libraries/adafruit/Adafruit%20SSD1306/examples/ssd1306_128x32_i2c/ssd1306_128x32_i2c.ino
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
@@ -94,7 +94,6 @@ void setup() {
     display.display();
     delay(200);
     display.clearDisplay();
-
 }
 
 void loop() {
@@ -130,7 +129,7 @@ void ParkhilfeLH () {
     // Funktion zur Distanzmessung aufrufen
     distanceLH();
     if (distanzLH > 0 && distanzLH < 300) { // Nur innerhalb eines gültigen Bereichs 0-3m
-        unsigned long intervalLH = (0.11 * (distanzLH * distanzLH) + 50); // quadratische Funktion, so dass die Dauer(Intervall) des Ton mit abnehmender Distanz kürzer wird
+        unsigned long intervalLH = (5*(distanzLH) + 10); // quadratische Funktion, so dass die Dauer(Intervall) des Ton mit abnehmender Distanz kürzer wird
         //map() kann auch eingefügt werden. map(distanz, 1, 200, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
         buzzerLH(intervalLH); // Aktiviert den Buzzer mit dem berechneten Intervall.
     } else {
@@ -144,7 +143,7 @@ void ParkhilfeRH () {
     // Funktion zur Distanzmessung aufrufen
     distanceRH();
     if (distanzRH > 0 && distanzRH < 300) {
-        unsigned long intervalRH = (0.11 * (distanzRH * distanzRH) + 50);
+        unsigned long intervalRH = (5*(distanzRH) + 10);
 
         buzzerRH(intervalRH);
     } else {
@@ -152,6 +151,7 @@ void ParkhilfeRH () {
     }
 }
 
+// Quelle Code Beschleunigung: https://wolles-elektronikkiste.de/mpu6050-beschleunigungssensor-und-gyroskop
 void Beschleunigung () {
         if (millis() - lastAccelTime >= accelInterval) {
             lastAccelTime = millis(); // Aktualisiere die Zeit der letzten Messung
@@ -186,15 +186,15 @@ void Beschleunigung () {
 
             // Daten ausgeben auf OLED-Display
             display.clearDisplay();
-            display.setTextSize(1); // Draw 2X-scale text
+            display.setTextSize(2); // Draw 2X-scale text
             display.setTextColor(SSD1306_WHITE);
-            display.setCursor(10, 10);
-            display.print("tmp = %f °C", temperature);// Temperatur auf OLED-Display
-            display.display();      // Show initial text
+            display.setCursor(10, 8);
+            display.print("tmp=");
+            display.print(temperature, 1); // temperature mit 2 Dezimalstellen
+            display.print("C");
+            display.display();
         }
     }
-
-
 
 // Funktion zur Distanzmessung in regelmässigen Abständen linke Seite
 void distanceLH() {
@@ -241,6 +241,7 @@ void buzzerLH(unsigned long intervalLH) { //intervalLH: Zeitdauer in Millisekund
         previousBuzzerTimeLH = millis(); // Zeit aktualisieren, speichert den Zeitpunkt der letzten Buzzer-Aktivierung.
         buzzerStateLH = !buzzerStateLH; // Buzzer-Zustand wird invertiert
         analogWrite(buzzerPinLH, buzzerStateLH ? 128 : LOW); //Ternäre Bedingung: buzzerStateLH == true: 128 (50% von Frequenz 255, was einem C4 Ton entspricht), buzzerStateLH == false: LOW
+        // Erklärung zu PWM: https://exp-tech.de/blogs/blog/arduino-tutorial-pulsweitenmodulation-pwm
     }
 }
 
@@ -285,19 +286,8 @@ void buzzerRH(unsigned long intervalRH) {
     if (millis() - previousBuzzerTimeRH >= intervalRH) {
         previousBuzzerTimeRH = millis();
         buzzerStateRH = !buzzerStateRH;
-        analogWrite(buzzerPinRH, buzzerStateRH ? 128 : LOW);
+        analogWrite(buzzerPinRH, buzzerStateRH ? 96 : LOW);
     }
-}
-
-void OLEDdisplay() {
-    display.clearDisplay();
-
-    display.setTextSize(2); // Draw 2X-scale text
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(10, 10);
-    display.println(F("scroll"));
-    display.display();      // Show initial text
-    delay(100);
 }
 
 
