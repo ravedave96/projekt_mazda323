@@ -181,7 +181,7 @@ Die Anwendung funktioniert mit jeweils eigenem Intervall und einer einstellbaren
 #### 7.3.3 Proleme/Lösungen Test Funktion Beschleunigung() im Branch MPU6050
 ##### Problem 1
 Die delay() Funktion hat das Umschalten verunmöglicht, da der main loop() blockiert wurde, konnte die Betätigung des Druckschalters nicht erfasst werden.
-#####Lösung 1
+##### Lösung 1
 Ersetzung von delay() durch millis().
 ## 8 Fazit
 Das Arduino-Projekt kombiniert eine intelligente Parkhilfe mit einem Beschleunigungsmesser. Die Visualisierung und akustische Rückmeldung machen das System zu einer hilfreichen Fahrzeugunterstützung.
