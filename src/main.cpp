@@ -3,8 +3,10 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+//Quelle für Beschleunigungsfunktion: https://wolles-elektronikkiste.de/mpu6050-beschleunigungssensor-und-gyroskop
+//Quelle für OLED-Display: Adafruit Bibliothek https://registry.platformio.org/libraries/adafruit/Adafruit%20SSD1306/examples/ssd1306_128x32_i2c/ssd1306_128x32_i2c.ino
 
-//OLED-Display Settings, Quelle: Adafruit Bibliothek https://registry.platformio.org/libraries/adafruit/Adafruit%20SSD1306/examples/ssd1306_128x32_i2c/ssd1306_128x32_i2c.ino
+//OLED-Display Settings
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
@@ -16,9 +18,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Zuweisung Pin auf Arduino Board
 #define tasterPin 2
-
 #define MPU6050_ADDR 0x68 // Alternativ AD0 auf HIGH setzen --> Adresse = 0x69
-
 // MPU-6050 SCL Anschluss auf Pin A5
 // MPU-6050 SDA Anschluss auf Pin A4
 #define trigPinLH 6 // Pin für den Trigger des Ultraschallsensors (links)
@@ -75,7 +75,7 @@ void setup() {
     Wire.write(0);    // Wake-up-Befehl
     Wire.endTransmission(true);
 
-    pinMode(tasterPin, INPUT);          // Eingang  2, Taster
+    pinMode(tasterPin, INPUT);      // Eingang  2, Taster
 
     pinMode(trigPinLH, OUTPUT);     // Ausgang 6, TriggerLH
     pinMode(echoPinLH, INPUT);      // Eingang 7, EchoLH
@@ -103,7 +103,6 @@ void loop() {
             ParkhilfeRH();
 
             // Daten für Parkhilfe ausgeben auf OLED-Display, besser hier als in Funktionen, da die Funktionen getrennt ablaufen.
-            // Display Ausgabe mithilfe Bibliothek adafruit/Adafruit SSD1306
             display.clearDisplay();
             display.setTextSize(1);
             display.setTextColor(SSD1306_WHITE);
@@ -128,6 +127,8 @@ void loop() {
 
         } else {
             Beschleunigung();
+
+            //Buzzer ausschalten, damit diese sicher off sind.
             analogWrite(buzzerPinLH, LOW);
             analogWrite(buzzerPinRH, LOW);
         }
@@ -148,35 +149,32 @@ void umschalten () {
     // Aktuellen Zustand Tasters speichern
     lastpush = push;
 }
-
 // Funktion zur Parkhilfe linke Seite
 void ParkhilfeLH () {
     // Funktion zur Distanzmessung aufrufen
     distanceLH();
+    // Funktion zur kontinuierlichen Steuerung des Buzzer aufrufen
     if (distanzLH > 0 && distanzLH < 300) { // Nur innerhalb eines gültigen Bereichs 0-3m
         unsigned long intervalLH = (5*(distanzLH) + 10); // quadratische Funktion, so dass die Dauer(Intervall) des Ton mit abnehmender Distanz kürzer wird
-        //map() kann auch eingefügt werden. map(distanz, 1, 200, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
+        //map() kann auch eingefügt werden. map(distanz, 1, 300, 50, 1000) skaliert die Distanz auf eine Tonlänge zwischen 50 ms und 1000 ms.
         buzzerLH(intervalLH); // Aktiviert den Buzzer mit dem berechneten Intervall.
     } else {
         analogWrite(buzzerPinLH, LOW); // Buzzer ausschalten, wenn Distanz ausserhalb des Bereichs
     }
-    // Funktion zur kontinuierlichen Steuerung des Buzzer aufrufen
 }
 
-// Funktion zur Parkhilfe rechte Seite
+// Funktion zur Parkhilfe rechte Seite, ohne Kommentare
 void ParkhilfeRH () {
-    // Funktion zur Distanzmessung aufrufen
     distanceRH();
     if (distanzRH > 0 && distanzRH < 300) {
         unsigned long intervalRH = (5*(distanzRH) + 10);
-
         buzzerRH(intervalRH);
     } else {
         analogWrite(buzzerPinRH, LOW);
     }
 }
 
-// Quelle Code Beschleunigung: https://wolles-elektronikkiste.de/mpu6050-beschleunigungssensor-und-gyroskop
+// Quelle: https://wolles-elektronikkiste.de/mpu6050-beschleunigungssensor-und-gyroskop
 // optimiert mit chatgpt.com
 // Display Ausgabe mithilfe Bibliothek adafruit/Adafruit SSD1306
 void Beschleunigung () {
@@ -235,6 +233,7 @@ void Beschleunigung () {
     }
 
 // Funktion zur Distanzmessung in regelmässigen Abständen linke Seite
+// Quelle für die ultrasonic Sensoren: https://www.circuitbasics.com/how-to-set-up-an-ultrasonic-range-finder-on-an-arduino/
 void distanceLH() {
     // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
     if (millis() - lastMeasurementTimeLH < measurementIntervalLH) {
@@ -279,33 +278,28 @@ void buzzerLH(unsigned long intervalLH) { //intervalLH: Zeitdauer in Millisekund
     }
 }
 
-// Funktion zur Distanzmessung in regelmässigen Abständen rechte Seite
+// Funktion zur Distanzmessung in regelmässigen Abständen rechte Seite, ohne Kommentare
 void distanceRH() {
-    // Führt die Messung nur aus, wenn der Mindestzeitabstand (measurementIntervalLH) überschritten wurde (500ms).
     if (millis() - lastMeasurementTimeRH < measurementIntervalRH) {
-        return; // Noch nicht Zeit für die nächste Messung
+        return;
     }
-    lastMeasurementTimeRH = millis(); // Zeit der letzten Messung aktualisieren
+    lastMeasurementTimeRH = millis();
 
     float zeit = 0;
 
-    // Ultraschallsensor (rechts) auslösen, sendet ein 10-µs-Signal über den trigPinLH
     digitalWrite(trigPinRH, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPinRH, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPinRH, LOW);
 
-    // Dauer des Echos messen
-    // Misst die Zeit, die das Echo benötigt, um den Sensor zu erreichen (mit Timeout von 17442 µs für 300 cm).
-    zeit = pulseIn(echoPinRH, HIGH, 17442); // 11630ms=200cm, 17442ms=300cm, 30000ms=500cm, (30.000μs/2*0.0344≈516cm)
+    zeit = pulseIn(echoPinRH, HIGH, 17442);
     if (zeit == 0) {
         Serial.println("Kein Echo empfangen (rechts)");
-        distanzRH = -1;  // Gibt -1 zurück, wenn kein Echo empfangen wurde.
+        distanzRH = -1;
         return;
     }
 
-    // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
     distanzRH = (zeit / 2) * 0.0344;
 
     Serial.print("Distanz RH = ");
@@ -313,7 +307,7 @@ void distanceRH() {
     Serial.println(" cm");
 }
 
-// Funktion zur Steuerung des Buzzers basierend auf der Distanz rechte Seite
+// Funktion zur Steuerung des Buzzers basierend auf der Distanz rechte Seite, ohne Kommentare
 void buzzerRH(unsigned long intervalRH) {
     static bool buzzerStateRH = false;
 
