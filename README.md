@@ -48,7 +48,7 @@ Funktionen:
 ### 6.1 Programmstruktur
 - **umschalten():** Wechselt zwischen den Modi (Einparkhilfe/Beschleunigung).
 - **Parkhilfe():** Stellt Distanzmessung und akustische Ausgabe sicher.
-- **distance():** Misst Hindernisse regelmäßig, blockiert aber nicht den Hauptprogrammfluss.
+- **distance():** Misst Hindernisse regelmäsig, blockiert aber nicht den Hauptprogrammfluss.
 - **buzzer():** Gibt akustische Signale proportional zur Distanz aus.
 - **Beschleunigung():** Misst und gibt G-Kräfte sowie Temperatur aus.
 ### 6.2. Beschreibung der Hauptfunktionen
@@ -127,7 +127,7 @@ Die Einbindung des OLED-Displays wurde in diesem Test-Teil erfolgreich durchgef�
 - Bei Power-ON ist dieser Modus aktiviert
 - Wechsel von Parkhilfe-Modus in den Beschleunigungsmodus mit dem Drucktaster.
 - Überprüfe die korrekte Anzeige der Beschleunigungsdaten und der Temperatur auf dem OLED-Display.
-- Stelle sicher, dass der Modus ordnungsgemäß bleibt, bis er manuell gewechselt wird.
+- Stelle sicher, dass der Modus ordnungsgemäs bleibt, bis er manuell gewechselt wird.
 #### 7.2.2 Szenarien
 1. Rückwärts Einparken mit Hindernissen auf beiden Seiten.
 2. Wechsel zwischen den Modi während der Fahrt.
@@ -171,7 +171,7 @@ Die Frequenz, also Tonhöhe lässt sich nicht genau einstellen. Die Funktion fun
 ##### Lösung 2
 Da die tone()-Funktion nicht verwendet werden darf, muss man die HIGH- und LOW-Zustände des Buzzers genauer steuern, um eine Rechteckwelle mit der gewünschten Frequenz zu erhalten.
 Quelle: BLACKBOX.AI
-Um den Buzzer in der Frequenz C4 (261,63 Hz) zu betreiben, können wir die Funktion analogWrite() verwenden, um ein PWM-Signal zu erzeugen. Da die Frequenz von analogWrite() auf den meisten Arduino-Boards (wie dem Uno) standardmäßig 490 Hz beträgt, können wir die PWM-Duty-Cycle anpassen, um den gewünschten Ton zu erzeugen.
+Um den Buzzer in der Frequenz C4 (261,63 Hz) zu betreiben, können wir die Funktion analogWrite() verwenden, um ein PWM-Signal zu erzeugen. Da die Frequenz von analogWrite() auf den meisten Arduino-Boards (wie dem Uno) standardmäsig 490 Hz beträgt, können wir die PWM-Duty-Cycle anpassen, um den gewünschten Ton zu erzeugen.
 
 Somit habe ich nun in der Buzzer Funktion den digitalWrite() zu analogWrite() geändert. 
 
@@ -193,3 +193,4 @@ Das Arduino-Projekt kombiniert eine intelligente Parkhilfe mit einem Beschleunig
 - Funktionen zusammenfassen, z.B. Parkhilfe LH und RH in eine Funktion.
 - Funktion für OLED-Anzeige erstellen um eine zentralisierte Sammlung aller Ausgabeparameter zu erhalten.
 - Akkustisches Signal im Gleichtakt ausgeben, wenn genau gleiche Distanz gemessen wird.
+- G-Sensor sehr sensibel, daher zeigt es immer einen Wert an, auch bei stillstand. Man könnte dies besser konfigurieren.
