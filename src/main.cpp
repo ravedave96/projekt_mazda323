@@ -101,6 +101,31 @@ void loop() {
         if (schalter) {
             ParkhilfeLH();
             ParkhilfeRH();
+
+            // Daten für Parkhilfe ausgeben auf OLED-Display, besser hier als in Funktionen, da die Funktionen getrennt ablaufen.
+            // Display Ausgabe mithilfe Bibliothek adafruit/Adafruit SSD1306
+            display.clearDisplay();
+            display.setTextSize(1);
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(25, 20);
+            display.print("Parking-Mode");
+
+            display.setTextSize(1);
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(1, 1);
+            display.print("LH=");
+            display.print(distanzLH,0);
+            display.print(" cm");
+
+            display.setTextSize(1);
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(70,1);
+            display.print("RH=");
+            display.print(distanzRH,0);
+            display.print(" cm");
+
+            display.display();
+
         } else {
             Beschleunigung();
             analogWrite(buzzerPinLH, LOW);
@@ -152,6 +177,8 @@ void ParkhilfeRH () {
 }
 
 // Quelle Code Beschleunigung: https://wolles-elektronikkiste.de/mpu6050-beschleunigungssensor-und-gyroskop
+// optimiert mit chatgpt.com
+// Display Ausgabe mithilfe Bibliothek adafruit/Adafruit SSD1306
 void Beschleunigung () {
         if (millis() - lastAccelTime >= accelInterval) {
             lastAccelTime = millis(); // Aktualisiere die Zeit der letzten Messung
@@ -171,27 +198,38 @@ void Beschleunigung () {
             gyroY = Wire.read() << 8 | Wire.read(); // GYRO_YOUT_H und GYRO_YOUT_L
             gyroZ = Wire.read() << 8 | Wire.read(); // GYRO_ZOUT_H und GYRO_ZOUT_L
 
-            // Daten ausgeben
-            Serial.print("AcX = "); Serial.print((accX));
-            Serial.print(" | AcY = "); Serial.print((accY));
-            Serial.print(" | AcZ = "); Serial.print((accZ));
-            Serial.print(" | tmp = "); Serial.print((tRaw + 12412.0) / 340.0); // Temperatur
-            Serial.print(" | GyX = "); Serial.print((gyroX));
-            Serial.print(" | GyY = "); Serial.print((gyroY));
-            Serial.print(" | GyZ = "); Serial.print((gyroZ));
-            Serial.println();
+            // Skalierung der Beschleunigungswerte
+            float accX_g = accX / 16384.0; // Umrechnung in g für ±2g-Empfindlichkeit
+            float accY_g = accY / 16384.0;
+
+            // Berechnung des grössten Absolutwerts (nur X und Y)
+            float maxAccXY = max(abs(accX_g), abs(accY_g));
 
             //variable für Temperatur
             float temperature = (tRaw + 12412.0) / 340.0;
 
-            // Daten ausgeben auf OLED-Display
+            // Daten für Beschleunigung ausgeben auf OLED-Display
+            // Ausgabe der grössten Beschleunigung (nur X und Y), Z-Achse wird ignoriert, da diese die Schwerkraft wiedergibt.
             display.clearDisplay();
-            display.setTextSize(2); // Draw 2X-scale text
+            display.setTextSize(1);
             display.setTextColor(SSD1306_WHITE);
-            display.setCursor(10, 8);
-            display.print("tmp=");
-            display.print(temperature, 1); // temperature mit 2 Dezimalstellen
+            display.setCursor(25, 1);
+            display.print("T:");
+            display.print(temperature, 1); // temperature mit einer Dezimalstellen
             display.print("C");
+
+            display.setTextSize(1);
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(25, 10);
+            display.print("G-Force:");
+            display.print(maxAccXY, 2); // Beschleunigung mit 2 Dezimalstellen
+            display.print("g");
+
+            display.setTextSize(1);
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(25, 20);
+            display.print("Driving-Mode");
+
             display.display();
         }
     }
@@ -224,10 +262,6 @@ void distanceLH() {
 
     // Distanz berechnen basierend auf der Schallgeschwindigkeit (0,0344 cm/µs).
     distanzLH = (zeit / 2) * 0.0344;
-
-    Serial.print("Distanz LH = ");
-    Serial.print(distanzLH);
-    Serial.println(" cm");
 }
 
 // Funktion zur Steuerung des Buzzers basierend auf der Distanz linke Seite
@@ -289,7 +323,3 @@ void buzzerRH(unsigned long intervalRH) {
         analogWrite(buzzerPinRH, buzzerStateRH ? 96 : LOW);
     }
 }
-
-
-
-
