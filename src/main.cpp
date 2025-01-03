@@ -33,22 +33,16 @@ void loop() {
   gyroY = Wire.read() << 8 | Wire.read(); // GYRO_YOUT_H und GYRO_YOUT_L
   gyroZ = Wire.read() << 8 | Wire.read(); // GYRO_ZOUT_H und GYRO_ZOUT_L
 
-  // Daten ausgeben
-  Serial.print("AcX = "); Serial.print((accX));
-  Serial.print(" | AcY = "); Serial.print((accY));
-  Serial.print(" | AcZ = "); Serial.print((accZ));
-  Serial.print(" | tmp = "); Serial.print((tRaw + 12412.0) / 340.0); // Temperatur
-  Serial.print(" | GyX = "); Serial.print((gyroX));
-  Serial.print(" | GyY = "); Serial.print((gyroY));
-  Serial.print(" | GyZ = "); Serial.print((gyroZ));
-  Serial.println();
+  // Skalierung der Beschleunigungswerte
+  float accX_g = accX / 16384.0; // Umrechnung in g für ±2g-Empfindlichkeit
+  float accY_g = accY / 16384.0;
 
-  delay(1000); // 1 Sekunde Pause
+  // Berechnung des größten Absolutwerts (nur X und Y)
+  float maxAccXY = max(abs(accX_g), abs(accY_g));
+
+  // Ausgabe der größten Beschleunigung (nur X und Y)
+  Serial.print("Max Acceleration (X/Y) = "); Serial.print(maxAccXY, 3); // auf 3 Dezimalstellen gerundet
+  Serial.println(" g");
 }
 
-// Funktion zur Umwandlung von int16-Werten in formatierte Strings
-char* toStr(int16_t character) {
-  sprintf(result, "%6d", character);
-  return result;
-}
 
